@@ -31,7 +31,8 @@ class downloadCALIPSO(cmr):
         self.token = self.get_tokens(username, password)
 
     def searchfile(self, starttime, endtime=None, satid='CALIPSO',
-                   prodversion='CAL_LID_L1-Standard-V4-10', provider='LARC_ASDC', pattern='.hdf'):
+                   shortname='CAL_LID_L1-Standard-V4-10',
+                   provider='LARC_ASDC', version=None, pattern='.hdf'):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -43,7 +44,7 @@ class downloadCALIPSO(cmr):
             起始时间
         satid : str, optional
             卫星名
-        prodversion : str
+        shortname : str
             对应cmr中的short name
         Provider : str, optional
             产品提供的组织结构
@@ -58,7 +59,7 @@ class downloadCALIPSO(cmr):
         CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
                           'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not self.cmr_check_provider(shortname=prodversion, provider=provider) :
+        if not self.cmr_check_provider(shortname=shortname, provider=provider) :
             raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
         # 2006-06-12 ~ 2021-09-06
         # 2020-07-01 ~ now
@@ -67,7 +68,7 @@ class downloadCALIPSO(cmr):
             endtime = starttime
 
         filelist = self.cmr_search(starttime=starttime, endtime=endtime,
-                                   short_name=prodversion)
+                                   short_name=shortname)
         return filelist
 
     def download(self, outdir, url, timeout=5 * 60, skip=False, **kwargs):

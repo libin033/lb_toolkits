@@ -145,7 +145,11 @@ class Downloader:
         # An incomplete download triggers the retrieval from the LTA if the product is not online
         if not self.api.is_online(id):
             self.trigger_offline_retrieval(id)
-            raise LTATriggered(id)
+            # raise LTATriggered(id)
+            print('Product 【{}】 is not online. Triggered retrieval from the Long Term Archive.'.format(
+                id
+            ))
+            return product_info
 
         self._download_common(product_info, path, stop_event)
         return product_info
@@ -223,12 +227,15 @@ class Downloader:
                 stop_event,
             )
         # Check integrity with MD5 checksum
-        if self.verify_checksum is True:
-            if not self.api._checksum_compare(temp_path, product_info):
-                temp_path.unlink()
-                raise InvalidChecksumError("File corrupt: checksums do not match")
+        # if self.verify_checksum is True:
+        #     if not self.api._checksum_compare(temp_path, product_info):
+        #         temp_path.unlink()
+        #         raise InvalidChecksumError("File corrupt: checksums do not match")
         # Download successful, rename the temporary file to its proper name
-        shutil.move(temp_path, path)
+        if temp_path.exists():
+            size = temp_path.stat().st_size
+            if size == product_info["size"]:
+                shutil.move(temp_path, path)
         return product_info
 
     def download_all(self, products, directory="."):
@@ -733,7 +740,7 @@ class Downloader:
         with self.api.dl_limit_semaphore:
             r = self.api.session.get(url, stream=True, headers=headers)
         with self._tqdm(
-            desc=f"Downloading {title}",
+            desc=f"正在下载【{title}】",
             total=file_size,
             unit="B",
             unit_scale=True,

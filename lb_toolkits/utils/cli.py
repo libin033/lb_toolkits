@@ -7,9 +7,9 @@ from io import StringIO
 
 import click
 
-from .api import API
-from .earthexplorer import EarthExplorer
-from .errors import LandsatxploreError
+from lb_toolkits.utils.api import API
+from lb_toolkits.utils.earthexplorer import EarthExplorer
+from lb_toolkits.utils.errors import LandsatxploreError
 
 DATASETS = [
     "landsat_tm_c1",
@@ -98,7 +98,7 @@ def search(
     if limit:
         where.update(max_results=limit)
 
-    results = api.cmr_search(**where)
+    results = api.search(**where)
     api.logout()
 
     if not results:
@@ -151,8 +151,9 @@ def search(
     "--timeout", "-t", type=click.INT, default=300, help="Download timeout in seconds."
 )
 @click.option("--skip", is_flag=True, default=False)
+@click.option("--overwrite", is_flag=True, default=False)
 @click.argument("scenes", type=click.STRING, nargs=-1)
-def download(username, password, dataset, output, timeout, skip, scenes):
+def download(username, password, dataset, output, timeout, skip, overwrite, scenes):
     """Download one or several scenes."""
     ee = EarthExplorer(username, password)
     output_dir = os.path.abspath(output)
@@ -161,8 +162,13 @@ def download(username, password, dataset, output, timeout, skip, scenes):
     for scene in scenes:
         if not ee.logged_in():
             ee = EarthExplorer(username, password)
-        fname = ee.cmr_download(
-            scene, output_dir, dataset=dataset, timeout=timeout, skip=skip
+        fname = ee.download(
+            scene,
+            output_dir,
+            dataset=dataset,
+            timeout=timeout,
+            skip=skip,
+            overwrite=overwrite,
         )
         if skip:
             click.echo(fname)

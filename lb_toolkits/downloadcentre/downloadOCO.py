@@ -39,8 +39,10 @@ class downloadOCO(cmr):
         self.username = username
         self.password = password
 
-    def searchfile(self, starttime, endtime=None, satid='OCO2_DATA',
-                   prodversion='OCO2_L2_Standard.10r', Provider='LARC_ASDC', pattern='.h5', **kwargs):
+    def searchfile(self, starttime, endtime=None,
+                   shortname='OCO2_L2_Standard.10r',
+                   provider='LARC_ASDC',
+                   **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -50,14 +52,10 @@ class downloadOCO(cmr):
             起始时间
         endtime : datetime, optional
             起始时间
-        satid : str, optional
-            卫星名
-        prodversion : str
+        shortname : str
             对应cmr中的short name
-        Provider : str, optional
+        provider : str, optional
             产品提供的组织结构
-        pattern : str or list
-            预留接口，对文件名进行模糊匹配（未实现改功能）
         Returns
         -------
             list
@@ -68,18 +66,18 @@ class downloadOCO(cmr):
             endtime = starttime
 
         CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=Provider)
+                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not self.cmr_check_provider(shortname=prodversion) :
+        if not self.cmr_check_provider(shortname=shortname) :
             raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
 
         # 调用cmr进行产品查询
         filelist = self.cmr_search(starttime=starttime, endtime=endtime,
-                                   short_name=prodversion, **kwargs)
+                                   short_name=shortname, **kwargs)
 
         return filelist
 
-    def download(self, outdir, url, timeout=5 * 60, skip=False):
+    def download(self, outdir, url, timeout=5*60, skip=False):
         '''
         根据输入url下载相应的文件
 

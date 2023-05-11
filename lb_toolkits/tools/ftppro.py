@@ -105,11 +105,10 @@ class ftppro():
 
         self.__makedir(localPath)
 
-        ftp = self.connect()
-        if ftp is None :
-            return None
-
         try:
+            ftp = self.connect()
+            if ftp is None :
+                return None
             self._download(ftp, tempfile, remoteFile, blocksize=blocksize)
 
             # with open(tempfile, "wb") as fp:
@@ -125,6 +124,9 @@ class ftppro():
             print('下载文件失败【%s】' %(localFile))
             print('再尝试一次下载文件【%s】' %(localFile))
             try:
+                ftp = self.connect()
+                if ftp is None :
+                    return None
                 self._download(ftp, tempfile, remoteFile, blocksize=blocksize)
                 if os.path.isfile(tempfile) :
                     os.rename(tempfile, localFile)

@@ -17,7 +17,7 @@ import os
 import datetime
 
 from lb_toolkits.utils.api import API
-from lb_toolkits.utils.earthexplorer import EarthExplorer
+from lb_toolkits.utils.earthexplorer import EarthExplorer, DATA_PRODUCTS
 from .cmr import cmr
 
 class downloadLandsat(cmr):
@@ -27,25 +27,31 @@ class downloadLandsat(cmr):
         self.password = password
 
 
-    def searchfile(self, product,
-                   startdate, enddate=None,
-                   longitude=None, latitude=None,
-                   bbox=None, cloud_cover_max=None,
-                   months=None, max_results=100):
+    def searchfile(
+            self,
+            product,
+            startdate,
+            enddate=None,
+            longitude=None,
+            latitude=None,
+            bbox=None,
+            cloud_cover_max=None,
+            months=None,
+            max_results=100,
+            **kwargs
+    ):
         '''
         Search for scenes.
 
         - Dataset Name	                         >>        Dataset ID
-        - Landsat 5 TM Collection 1 Level 1	     >>      landsat_tm_c1
         - Landsat 5 TM Collection 2 Level 1	     >>      landsat_tm_c2_l1
         - Landsat 5 TM Collection 2 Level 2	     >>      landsat_tm_c2_l2
-        - Landsat 7 ETM+ Collection 1 Level 1	 >>      landsat_etm_c1
         - Landsat 7 ETM+ Collection 2 Level 1	 >>      landsat_etm_c2_l1
         - Landsat 7 ETM+ Collection 2 Level 2	 >>      landsat_etm_c2_l2
-        - Landsat 8 Collection 1 Level 1	     >>      landsat_8_c1
         - Landsat 8 Collection 2 Level 1	     >>      landsat_ot_c2_l1
         - Landsat 8 Collection 2 Level 2	     >>      landsat_ot_c2_l2
-        - Sentinel 2A	                         >>      sentinel_2a
+        - Landsat 9 Collection 2 Level 1	     >>      landsat_ot_c2_l1
+        - Landsat 9 Collection 2 Level 2	     >>      landsat_ot_c2_l2
 
         Parameters
         ----------
@@ -76,6 +82,10 @@ class downloadLandsat(cmr):
         '''
         if enddate is None :
             enddate = startdate
+
+        if not product in DATA_PRODUCTS :
+            raise Exception('product[{}] 不在下载列表中，请参考下载参数列表：{}'.format(
+                product, DATA_PRODUCTS.keys()))
 
         start_date = startdate.strftime('%Y-%m-%d')
         end_date   = enddate.strftime('%Y-%m-%d')
@@ -120,21 +130,28 @@ class downloadLandsat(cmr):
             Earth_Down.logout()
 
             return None
-
+        Earth_Down = EarthExplorer(self.username, self.password)
         for scene in Landsat_name:
             for i in range(retry) :
                 try:
                     Earth_Down = EarthExplorer(self.username, self.password)
                     ID = scene['entity_id']
                     # IDpro = ID[3:9]
-                    Earth_Down.download(identifier=ID, output_dir=outdir, timeout=timeout)
-                    Earth_Down.logout()
+                    filename = Earth_Down.download(identifier=ID, output_dir=outdir, timeout=timeout)
+                    if filename :
+                        print('成功下载【%s】' %(filename))
+                    else:
+                        print('下载失败【%s】' %(ID))
+                    # Earth_Down.logout()
                     break
                 except BaseException as e :
-                    continue
+                    print('下载失败【%s】' %(ID))
+                    break
+        Earth_Down.logout()
 
-    def searchfileByCMR(self, starttime, endtime=None, satid='Landsat',
-                   prodversion='Landsat_8', Provider='USGS_LTA', pattern='.hdf'):
+    def searchfileByCMR(self, starttime, endtime=None,
+                        shortname='Landsat_8', provider='USGS_LTA',
+                        version=None, **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -146,9 +163,9 @@ class downloadLandsat(cmr):
             起始时间
         satid : str, optional
             卫星名
-        prodversion : str
+        shortname : str
             对应cmr中的short name
-        Provider : str, optional
+        provider : str, optional
             产品提供的组织结构
         pattern : str or list
             预留接口，对文件名进行模糊匹配（未实现改功能）
@@ -159,16 +176,16 @@ class downloadLandsat(cmr):
         '''
 
         CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=Provider)
+                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not self.cmr_check_provider(shortname=prodversion) :
+        if not self.cmr_check_provider(shortname=shortname) :
             raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
 
         if endtime is None :
             endtime = starttime
 
         filelist = self.cmr_search(starttime=starttime, endtime=endtime,
-                                   short_name=prodversion)
+                                   short_name=shortname, **kwargs)
         return filelist
 
     def downloadByCMR(self, outdir, url, timeout=5 * 60, skip=False):

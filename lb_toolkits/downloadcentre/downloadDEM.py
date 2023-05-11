@@ -58,8 +58,8 @@ class downloadDEM(cmr) :
 
         return urllist
 
-    def searchfile(self, satid='ASTGTM', prodversion='ASTGTM_NC', Provider='LPDAAC_ECS',
-                   bounding_box=[-180, -90, 180, 90], pattern=None):
+    def searchfile(self, shortname='ASTGTM_NC', provider='LPDAAC_ECS', version=None,
+                   bounding_box=[-180, -90, 180, 90], **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -71,9 +71,9 @@ class downloadDEM(cmr) :
             起始时间
         satid : str, optional
             卫星名
-        prodversion : str
+        shortname : str
             对应cmr中的short name
-        Provider : str, optional
+        provider : str, optional
             产品提供的组织结构
         pattern : str
             对文件名进行模糊匹配
@@ -89,16 +89,15 @@ class downloadDEM(cmr) :
         '''
 
         CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=Provider)
+                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not self.cmr_check_provider(shortname=prodversion) :
+        if not self.cmr_check_provider(shortname=shortname) :
             raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
 
-        if endtime is None :
-            endtime = starttime
-
-        filelist = self.cmr_search(starttime=None, endtime=None, pattern=pattern,
-                                   short_name=prodversion, bounding_box=bounding_box)
+        filelist = self.cmr_search(starttime=None, endtime=None,
+                                   short_name=shortname,
+                                   bounding_box=bounding_box,
+                                   **kwargs)
 
         return filelist
 

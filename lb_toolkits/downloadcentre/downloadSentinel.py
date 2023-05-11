@@ -50,7 +50,7 @@ class downloadSentinel():
 
 
     def searchfile(self, starttime, endtime=None, platformname='Sentinel-2',  producttype='S2MSI2A',
-                   footprint=None, geojson = None, filename='*', **keywords):
+                   footprint=None, geojson = None, filename='*', **kwargs):
         '''
         see 'https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/3FullTextSearch'
 
@@ -102,15 +102,15 @@ class downloadSentinel():
         if platformname in ['Sentinel-1', 's1', 'S1'] :
             return self.searchS1()
         elif platformname in ['Sentinel-2', 's2', 'S2']:
-            return self.searchS2(starttime, endtime, platformname, producttype, footprint, filename, **keywords)
+            return self.searchS2(starttime, endtime, platformname, producttype, footprint, filename, **kwargs)
         elif platformname in ['Sentinel-3', 's3', 'S3'] :
-            return self.searchS3(starttime, endtime, platformname, producttype, footprint, filename, **keywords)
+            return self.searchS3(starttime, endtime, platformname, producttype, footprint, filename, **kwargs)
         elif platformname in ['Sentinel-5', 'Sentinel-5P', 's5', 'S5', 'Sentinel-5 Precursor']:
-            return self.searchS5P(starttime, endtime, platformname, producttype, footprint, filename, **keywords)
+            return self.searchS5P(starttime, endtime, platformname, producttype, footprint, filename, **kwargs)
         else:
             raise Exception('请检查参数platformname【%s】不是指定卫星【Sentinel-1、Sentinel-2、Sentinel-3、Sentinel-5】')
 
-    def download(self, outdir, url, timeout=5 * 60, skip=False):
+    def download(self, outdir, url, timeout=5*60, skip=False):
         '''
         根据输入url下载相应的文件
 
@@ -141,7 +141,8 @@ class downloadSentinel():
             return product_info['title']
 
         #下载产品id为product的产品数据
-        self.api.download(url, directory_path=outdir, checksum=True)
+        self.api.download(url, directory_path=outdir, checksum=False)
+        # self.api.download_quicklook(url, directory_path=outdir)
 
     def searchS1(self, starttime, endtime, platformname, producttype, footprint=None, filename='*',
                  polarisationmode=None, sensoroperationalmode=None):
@@ -243,6 +244,7 @@ class downloadSentinel():
             self.api =SentinelAPI(self.username, self.password,'https://s5phub.copernicus.eu/dhus/')
         else:
             self.api =SentinelAPI(self.username, self.password, 'https://scihub.copernicus.eu/dhus/')
+            # self.api =SentinelAPI(self.username, self.password, 'https://scihub.copernicus.eu/apihub/')
 
         return platformname, producttype
 

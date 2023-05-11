@@ -21,6 +21,8 @@ import netrc
 import shutil
 import ssl
 import sys
+
+import numpy as np
 import requests
 import datetime
 import platform
@@ -397,7 +399,7 @@ class cmr() :
 
         return data
 
-    def cmr_check_provider(self, provider=None, shortname=None, Collection=None, version=None):
+    def cmr_check_provider(self, shortname=None, provider=None, collection=None, version=None):
 
         providerFlag=True
         shortnameFlag=True
@@ -408,65 +410,92 @@ class cmr() :
         CMR_Collection_List = []
         CMR_Version_List = []
 
-        Dict_Site_Info = self.spidertable(url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
-        CMR_Provider_List = Dict_Site_Info['Provider Name']
-        if provider is not None :
-            if not provider in CMR_Provider_List :
-                print('输入的provider参数【%s】错误，请核对该参数' %(provider))
-                print('当前仅支持Provider:', CMR_Provider_List)
-                providerFlag = False
+        Dict_CMR_Prod = {}
+        Dict_CMR_Prod[shortname] = {}
+        Dict_CMR_Prod[shortname]['provider'] = []
+        Dict_CMR_Prod[shortname]['version'] = []
 
+        CMR_Provider_Jsons = glob.glob(os.path.join(os.path.abspath(list(docs.__path__)[0]), 'provider', '*.json'))
+        for filename in CMR_Provider_Jsons :
 
-        if provider is not None :
-            dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
-                                         'collections/directory/{url}/gov.nasa.eosdis'.format(url=provider))
+            basename = os.path.basename(filename)
+            prodid = basename.split('.')[0]
+            if provider is not None :
+                if not prodid in [provider] :
+                    continue
+
+            dict_data = readjson(filename)
 
             CMR_ShortName_List.extend(dict_data['Short Name'])
             CMR_Collection_List.extend(dict_data['Collection'])
             CMR_Version_List.extend(dict_data['Version'])
-            # CMR_Provider_List.append(provider)
+            # CMR_Provider_List.append(basename.split('.')[0])
             if shortname is not None and shortname in dict_data['Short Name']:
-                print('='*100)
-                print('本产品【%s】生产单位：【%s】' %(shortname, provider))
-                print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
-                      'collections/directory/{url}/gov.nasa.eosdis"'.format(url=provider))
-                print('='*100)
-        else:
-            CMR_Provider_Jsons = glob.glob(os.path.join(os.path.abspath(list(docs.__path__)[0]), 'provider', '*.json'))
-            for filename in CMR_Provider_Jsons :
+                Dict_CMR_Prod[shortname]['provider'].append(prodid)
+                versionindex = [i for i, x in enumerate(dict_data['Short Name']) if x in [shortname]]
+                Dict_CMR_Prod[shortname]['version'].extend(np.array(dict_data['Version'])[versionindex])
 
-                dict_data = readjson(filename)
+        if len(Dict_CMR_Prod[shortname]['provider']) > 1 :
+            raise Exception('该shortname【{}】有多个生产单位，请指定生产单位provider:{}'.format(
+                shortname, Dict_CMR_Prod[shortname]['provider']))
+        elif len(Dict_CMR_Prod[shortname]['provider']) == 1 and provider is None :
+            provider = Dict_CMR_Prod[shortname]['provider'][0]
 
-                basename = os.path.basename(filename)
-
-                CMR_ShortName_List.extend(dict_data['Short Name'])
-                CMR_Collection_List.extend(dict_data['Collection'])
-                CMR_Version_List.extend(dict_data['Version'])
-                CMR_Provider_List.append(basename.split('.')[0])
-                if shortname is not None and shortname in dict_data['Short Name']:
-                    print('='*100)
-                    print('本产品【%s】生产单位：【%s】' %(shortname, basename.split('.')[0]))
-                    print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
-                          'collections/directory/{url}/gov.nasa.eosdis"'.format(url=basename.split('.')[0]))
-                    print('='*100)
+        if len(Dict_CMR_Prod[shortname]['version']) > 1 :
+            raise Exception('该shortname【{}】有多个版本，请指定生产版本version:{}'.format(
+                shortname, Dict_CMR_Prod[shortname]['version']))
+        elif len(Dict_CMR_Prod[shortname]['version']) == 1 and version is None:
+            version = Dict_CMR_Prod[shortname]['version'][0]
 
         if shortname is not None :
             if not shortname in CMR_ShortName_List :
-                print('输入的shortname参数【%s】错误，请核对该参数' %(shortname))
-                print('当前仅支持shortname:', CMR_ShortName_List)
                 shortnameFlag = False
 
-        if Collection is not None :
-            if not Collection in CMR_Collection_List :
-                print('输入的Collection参数【%s】错误，请核对该参数' %(Collection))
-                print('当前仅支持Collection:', CMR_Collection_List)
+        # if not shortnameFlag :
+        #     Dict_Site_Info = self.spidertable(
+        #         url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
+        #     CMR_Provider_List = Dict_Site_Info['Provider Name']
+        #     if provider is not None :
+        #         if not provider in CMR_Provider_List :
+        #             print('输入的provider参数【%s】错误，请核对该参数' %(provider))
+        #             print('当前仅支持Provider:', CMR_Provider_List)
+        #             providerFlag = False
+        #         else:
+        #             dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
+        #                                          'collections/directory/{url}/gov.nasa.eosdis'.format(url=provider))
+        #
+        #             CMR_ShortName_List.extend(dict_data['Short Name'])
+        #             CMR_Collection_List.extend(dict_data['Collection'])
+        #             CMR_Version_List.extend(dict_data['Version'])
+        #             # CMR_Provider_List.append(provider)
+        #             if shortname is not None and shortname in dict_data['Short Name']:
+        #                 Dict_CMR_Prod[shortname]['provider'].append(prodid)
+        #                 Dict_CMR_Prod[shortname]['version'].append(dict_data['Version'])
+
+        if shortname is not None :
+            if not shortname in CMR_ShortName_List :
+                raise Exception('输入的shortname参数【{}】错误，当前仅支持shortname:{}'.format(
+                    shortname, CMR_ShortName_List))
+                shortnameFlag = False
+                return False
+
+        if collection is not None :
+            if not collection in CMR_Collection_List :
+                raise Exception('输入的Collection参数【{}】错误，当前仅支持Collection:{}'.format(
+                    collection, CMR_Collection_List))
                 CollectionFlag = False
 
         if version is not None :
             if not version in CMR_Version_List :
-                print('输入的version参数【%s】错误，请核对该参数' %(version))
-                print('当前仅支持version:', CMR_Version_List)
+                raise Exception('输入的version参数【{}】错误，当前仅支持version:{}'.format(
+                    version, CMR_Version_List))
                 versionFlag = False
+
+        print('='*100)
+        print('本产品【%s】生产单位：【%s】' %(shortname, provider))
+        print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
+              'collections/directory/{url}/gov.nasa.eosdis"'.format(url=provider))
+        print('='*100)
 
         return providerFlag & shortnameFlag & CollectionFlag & versionFlag
 

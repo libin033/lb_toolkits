@@ -39,9 +39,9 @@ class downloadMODIS(cmr):
         self.password = password
         self.token = self.get_tokens(username, password)
 
-    def searchfile(self, starttime, endtime=None, satid='MODIS',
-                   prodversion='MOD021KM', Provider='LAADS',
-                   version='6.1', pattern='.hdf'):
+    def searchfile(self, starttime, endtime=None,
+                   shortname='MOD021KM', provider='LAADS',
+                   version='6.1', **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -51,11 +51,9 @@ class downloadMODIS(cmr):
             起始时间
         endtime : datetime, optional
             起始时间
-        satid : str, optional
-            卫星名
-        prodversion : str
+        shortname : str
             对应cmr中的short name
-        Provider : str, optional
+        provider : str, optional
             产品提供的组织结构
         pattern : str or list
             预留接口，对文件名进行模糊匹配（未实现改功能）
@@ -66,16 +64,16 @@ class downloadMODIS(cmr):
         '''
 
         CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=Provider)
+                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not self.cmr_check_provider(shortname=prodversion) :
+        if not self.cmr_check_provider(shortname=shortname) :
             raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
 
         if endtime is None :
             endtime = starttime
 
         filelist = self.cmr_search(starttime=starttime, endtime=endtime,
-                                   short_name=prodversion, version=version)
+                                   short_name=shortname, version=version, **kwargs)
         return filelist
 
     def download(self, outdir, url, timeout=5 * 60, skip=False):

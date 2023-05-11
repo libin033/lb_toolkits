@@ -28,6 +28,7 @@ from .downloadOCO import downloadOCO
 from .downloadCALIPSO import downloadCALIPSO
 
 from .downloadMODIS import downloadMODIS
+from .downloadEarthdata import downloadEarthdata
 
 from .downloadGOSAT import downloadGOSAT
 

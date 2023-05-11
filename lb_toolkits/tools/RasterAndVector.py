@@ -14,6 +14,7 @@
 栅格和矢量数据文件操作
 
 '''
+import glob
 import os
 import sys
 import numpy as np
@@ -119,7 +120,7 @@ class RasterPro() :
         else:
             return outname
 
-    def to_vector(self, shpname, rastername, layername=None, field=None):
+    def to_vector(self, shpname, rastername, layername=None, field=None, geom_type=ogr.wkbMultiPolygon):
         '''
         栅格转矢量
         :param shpname: 输出的矢量文件名
@@ -142,10 +143,10 @@ class RasterPro() :
         polygon = drv.CreateDataSource(shpname)
         if layername is not None :
             poly_layer = polygon.CreateLayer(layername, srs=prj,
-                                             geom_type=ogr.wkbMultiPolygon)
+                                             geom_type=geom_type)
         else:
             poly_layer = polygon.CreateLayer(rastername[:-4], srs=prj,
-                                             geom_type=ogr.wkbMultiPolygon)
+                                             geom_type=geom_type)
 
         if field is not None :
             newfield = ogr.FieldDefn(field, ogr.OFTReal)
@@ -156,8 +157,6 @@ class RasterPro() :
         gdal.FPolygonize(inband, maskband, poly_layer, 0)
         polygon.SyncToDisk()
         polygon = None
-
-
 
 class VectorPro():
     '''
@@ -551,34 +550,162 @@ class VectorPro():
         -------
 
         '''
+        tempfiles = None
+        outdir = os.path.dirname(outname)
+        if not os.path.isdir(outdir) :
+            os.makedirs(outdir)
+
         driver = ogr.GetDriverByName('ESRI Shapefile')
-        shp1 = driver.Open(srcfile, gdalconst.GA_ReadOnly)
-        shp2 = driver.Open(clipfile, gdalconst.GA_ReadOnly)
-        src_layer1 = shp1.GetLayer()
-        src_layer2 = shp2.GetLayer()
+        srcds1 = driver.Open(srcfile, gdalconst.GA_ReadOnly)
+        srcds2 = driver.Open(clipfile, gdalconst.GA_ReadOnly)
+        src_layer1 = srcds1.GetLayer()
+        src_layer2 = srcds2.GetLayer()
         srs1 = src_layer1.GetSpatialRef()
         srs2 = src_layer2.GetSpatialRef()
         if srs1.GetAttrValue('AUTHORITY',1) != srs2.GetAttrValue('AUTHORITY',1):
-            raise Exception("空间参考不一致!")
+            print("空间参考不一致!将进行投影转换投影转换")
 
+            # 对clip文件进行投影转换
+            dstpatialRef = self.get_spatialref(srcfile)
+            tempfile = os.path.join(outdir, os.path.basename(clipfile))
+            tempfiles = glob.glob(tempfile.replace('.shp', '.*'))
+            for item in tempfiles :
+                try:
+                    os.remove(item)
+                except BaseException as e :
+                    continue
+            self.transform(tempfile, clipfile, dstpatialRef=dstpatialRef)
+
+            srcds2.Destroy()
+            # 获取转换后的结果
+            srcds2 = driver.Open(tempfile, gdalconst.GA_ReadOnly)
+            src_layer2 = srcds2.GetLayer()
+            srs2 = src_layer2.GetSpatialRef()
+            if srs1.GetAttrValue('AUTHORITY',1) != srs2.GetAttrValue('AUTHORITY',1):
+                raise Exception("空间参考不一致!将进行投影转换投影转换")
+
+            tempfiles = glob.glob(tempfile.replace('.shp', '.*'))
+
+        # 创建输出文件
         target_ds = ogr.GetDriverByName('ESRI Shapefile').CreateDataSource(outname)
-        target_layer = target_ds.CreateLayer(layername, srs1, geom_type=ogr.wkbPolygon, options=["ENCODING=UTF-8"]) # 设置编码为UTF-8，防止中文出现乱码
+        target_layer = target_ds.CreateLayer(layername, srs1,
+                                             geom_type=src_layer1.GetGeomType(),
+                                             options=["ENCODING=UTF-8"]) # 设置编码为UTF-8，防止中文出现乱码
+
+        # 定义输出属性表信息
+        feature = src_layer1.GetFeature(0)
+        field_count = feature.GetFieldCount()
+        field_names = []
+        for attr in range(field_count):
+            field_defn = feature.GetFieldDefnRef(attr)
+            field_names.append(field_defn.GetName())
+            target_layer.CreateField(field_defn)
 
         for feat1 in src_layer1:
             geom1 = feat1.GetGeometryRef()
             for feat2 in src_layer2:
                 geom2 = feat2.GetGeometryRef()
+                # 判断两个feature是否相交
                 if not geom1.Intersects(geom2):
                     continue
-                intersect = geom1.Intersection(geom2)
+                # intersect = geom1.Intersection(geom1)
                 feature = ogr.Feature(target_layer.GetLayerDefn())
-                feature.SetGeometry(intersect)
+                feature.SetGeometry(geom1)
+                # 将源文件中的字段信息写入匹配feature中
+                for field_name in field_names:
+                    feature.SetField(field_name, feat1.GetField(field_name))
                 target_layer.CreateFeature(feature)
 
-        # 清理引用
-        target_layer = None
-        ds = None
+                feat1.Destroy()
+                feat2.Destroy()
+                break
 
+        # 清理引用
+        target_ds.Destroy()
+        srcds1.Destroy()
+        srcds2.Destroy()
+        if tempfiles is not None :
+            for item in tempfiles :
+                try:
+                    os.remove(item)
+                except BaseException as e :
+                    continue
+
+    def transform(self, outname, srcshp, dstpatialRef):
+        # 当前地理参考
+        srcpatialRef = self.get_spatialref(srcshp)
+        # dstpatialRef = self.get_spatialref(dstshp)
+
+        ds = ogr.Open(srcshp)
+        srclayer = ds.GetLayer(0)
+
+        basename = os.path.basename(outname)
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+        out_ds = driver.CreateDataSource(outname)
+        outlayer = out_ds.CreateLayer(basename[:-4], geom_type=srclayer.GetGeomType())
+
+        # 投影转换
+        coordinate_transfor = osr.CoordinateTransformation(srcpatialRef, dstpatialRef)
+
+        # 定义输出属性表信息
+        feature = srclayer.GetFeature(0)
+        field_count = feature.GetFieldCount()
+        field_names = []
+        for attr in range(field_count):
+            field_defn = feature.GetFieldDefnRef(attr)
+            field_names.append(field_defn.GetName())
+            outlayer.CreateField(field_defn)
+
+        out_fielddefn = outlayer.GetLayerDefn()
+
+        for feature in srclayer:
+            geometry = feature.GetGeometryRef()
+            geometry.Transform(coordinate_transfor)
+
+            out_feature = ogr.Feature(out_fielddefn)
+            out_feature.SetGeometry(geometry)
+            for field_name in field_names:
+                out_feature.SetField(field_name,feature.GetField(field_name))
+            outlayer.CreateFeature(out_feature)
+
+            feature.Destroy()
+            out_feature.Destroy()
+
+        # 清除缓存
+        ds.Destroy()
+        out_ds.Destroy()
+        # 保存投影文件
+        dstpatialRef.MorphFromESRI()
+        prjname = outname.replace(".shp",".prj")
+        fn = open(prjname,'w')
+        fn.write(dstpatialRef.ExportToWkt())
+        fn.close()
+
+    def fishgrid(self, outname, extent, xRes, yRes):
+        ''' https://blog.csdn.net/weixin_42924891/article/details/85865260
+        https://zhuanlan.zhihu.com/p/403957133
+        '''
+        minX = extent[0]
+        minY = extent[1]
+        maxX = extent[2]
+        maxY = extent[3]
+
+        Height = int(np.ceil((maxY - minY) / yRes))
+        Width = int(np.ceil((maxX - minX) / xRes))
+
+
+
+
+    def get_spatialref(self, shpname):
+        ds = ogr.Open(shpname)
+        layer = ds.GetLayer(0)
+
+        # 当前地理参考
+        spatialRef = layer.GetFeature(0).GetGeometryRef().GetSpatialReference()
+        # 清除缓存
+        ds.Destroy()
+
+        return spatialRef
 
 
 # def contourGenerate(dstLayer, srcBand, contourInterval, contourBase,
@@ -690,6 +817,3 @@ def getNPDType(datatype) :
         return gdal.GDT_Float32
     else:
         return gdal.GDT_Unknown
-
-
-
