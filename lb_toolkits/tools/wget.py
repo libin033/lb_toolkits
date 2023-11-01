@@ -28,7 +28,19 @@ from lb_toolkits.downloadcentre import downwgetfromgithub
 
 
 def get_wget(path):
+    '''
+    获取wget的路径
 
+    Parameters
+    ----------
+    path ： str
+        wget路径
+
+    Returns
+    -------
+        wgetpath : str
+
+    '''
     WGET = _find_path(path)
 
     if WGET is None :

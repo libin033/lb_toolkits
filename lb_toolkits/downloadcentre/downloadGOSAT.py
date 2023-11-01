@@ -57,7 +57,7 @@ CO2_L3_Info = {
 def downloadGOSAT(outdir, nowdate, username, password, prod='CO2', level='L2'):
     '''
     https://data2.gosat.nies.go.jp/GosatDataArchiveService/usr/download/ProductPage/view
-    ------------------------------------------------------------------------------------
+
     ------------------------------------------------------------------------------------
     Observation period	            Input FTS L1B	Bias uncorrected    Bias corrected
                                                     FTS SWIR L2 CO2	    FTS SWIR L2 CO2

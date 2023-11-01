@@ -113,6 +113,7 @@ class downloadHY(object):
 
     def CheckInfo(self, satid, instid, prodid):
         ''' 根据输入的卫星、载荷、产品ID，检查其规范性 '''
+
         if satid in ['HY-2B', 'HY2B', 'H2B']:
             SatID = 'HY-2B'
         elif satid in ['HY-2C', 'HY2C', 'H2C']:
