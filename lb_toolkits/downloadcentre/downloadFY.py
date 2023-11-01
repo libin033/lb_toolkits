@@ -23,7 +23,7 @@ import tempfile
 
 from lb_toolkits.tools import ftppro
 from lb_toolkits.tools import spiderdownload
-from lb_toolkits.tools import VectorPro
+# from lb_toolkits.tools import VectorPro
 
 from .config import FY_FTP_URL
 
@@ -474,14 +474,14 @@ class downloadFY(object):
                 raise Exception('只支持下载FY3D MERSI L2 近实时数据')
 
             files = self.getFileList(L2Path)
-            # matchfiles = self._checktime(matchfiles, starttime, endtime, files, satid)
-            blockid = self.maskBlock10(extent=extent, shpname=shpname)
-
-            for item in blockid :
-                for filename in files :
-                    basename = os.path.basename(filename)
-                    if item in basename :
-                        matchfiles.append(filename)
+            matchfiles = self._checktime(matchfiles, starttime, endtime, files, satid)
+            # blockid = self.maskBlock10(extent=extent, shpname=shpname)
+            #
+            # for item in blockid :
+            #     for filename in files :
+            #         basename = os.path.basename(filename)
+            #         if item in basename :
+            #             matchfiles.append(filename)
 
             nowdate += datetime.timedelta(days=1)
 

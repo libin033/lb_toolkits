@@ -189,7 +189,7 @@ class downloadLandsat(cmr):
                                    short_name=shortname, **kwargs)
         return filelist
 
-    def downloadByCMR(self, outdir, url, timeout=5 * 60, skip=False, wgetpath=wgetpath):
+    def downloadByCMR(self, outdir, url, timeout=5 * 60, skip=False, wgetpath=None):
         '''
         根据输入url下载相应的文件
 
