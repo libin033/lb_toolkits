@@ -1,0 +1,35 @@
+package:
+  name : lb_toolkits
+  version : 1.1.10
+
+source:
+  path: ./lb_toolkits/
+
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python >=3.8
+    - setuptools
+
+  run:
+    - numpy >=1.2.0
+    - h5py >=1.0.0
+    - netcdf4 >=1.0.0
+    - tqdm >=4.0.0
+    - cdsapi >=0.5.0
+    - pyshp >=2.1.0
+    - pillow >=6.0.0
+    - imageio >=2.15.0
+    - paramiko >=2.10.0
+
+  test:
+    imports:
+      - lb_toolkits
+
+  about:
+    licents: MIT
+    doc_url: https://lb-toolkits.readthedocs.io/zh/latest/
+    description: lb_toolkits Library for Meteorology and Remote Sensing

@@ -1,0 +1,8 @@
+{
+  "minX" : -180.0,
+  "maxX" : 180.0,
+  "minY" : -70.0,
+  "maxY" : 70.0,
+  "resolution" : 0.25,
+  "maskshp" : ""
+}
