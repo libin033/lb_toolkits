@@ -1,4 +1,5 @@
-name: rtd38
+name: python39
+
 channels:
   - conda-forge
   - defaults
@@ -16,4 +17,3 @@ dependencies:
   - pillow >=6.0.0
   - imageio >=2.15.0
   - paramiko >=2.10.0
-prefix: /home/docs/.conda/envs/rtd38
