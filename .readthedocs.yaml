@@ -22,7 +22,7 @@ formats: all
 # set python version and docs requirements
 python:
    install:
-     - requirements: doc/source/readthedocs-requirements.txt
+     - requirements: requirements.txt
 #python:
 #  version: 3.8
 #  install:
