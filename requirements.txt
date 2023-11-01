@@ -13,3 +13,8 @@ geojson>=2.4
 geomet>=0.3
 html2text>=2
 python-dateutil>=2.0
+shapely
+certifi>=2017.4.17
+click>=7.1
+
+
