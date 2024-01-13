@@ -16,8 +16,8 @@ import html2text
 import requests
 from tqdm.auto import tqdm
 
-from .download import DownloadStatus, Downloader
-from .exceptions import (
+from lb_toolkits.utils.download import DownloadStatus, Downloader
+from lb_toolkits.utils.exceptions import (
     InvalidChecksumError,
     InvalidKeyError,
     QueryLengthError,
@@ -360,10 +360,10 @@ class SentinelAPI:
             max_offset = min(count, offset + limit)
         if max_offset > offset + self.page_size:
             progress = self._tqdm(
-                desc="Querying products",
+                desc="正在查询产品",
                 initial=self.page_size,
                 total=max_offset - offset,
-                unit="product",
+                unit="个",
             )
             for new_offset in range(offset + self.page_size, max_offset, self.page_size):
                 new_limit = limit
@@ -510,6 +510,12 @@ class SentinelAPI:
             response = self.session.get(url)
         self._check_scihub_response(response)
         values = _parse_odata_response(response.json()["d"])
+        if values["title"].startswith("S3"):
+            values["manifest_name"] = "xfdumanifest.xml"
+            values["product_root_dir"] = values["title"] + ".SEN3"
+        else:
+            values["manifest_name"] = "manifest.safe"
+            values["product_root_dir"] = values["title"] + ".SAFE"
         values["quicklook_url"] = self._get_odata_url(id, "/Products('Quicklook')/$value")
         return values
 
@@ -531,8 +537,6 @@ class SentinelAPI:
         :meth:`SentinelAPI.trigger_offline_retrieval()`
         """
         # Check https://scihub.copernicus.eu/userguide/ODataAPI#Products_entity for more information
-        # https://scihub.copernicus.eu/dhus/odata/v1/Products(\'8ca65354-c259-4d43-b896-054d9b92b7e2\')/$value'
-        # https://scihub.copernicus.eu/dhus/odata/v1/Products('6eb73ce0-344a-4623-9a20-8d349069bd80')/$value
 
         if not self._online_attribute_used:
             return True
@@ -946,7 +950,7 @@ class SentinelAPI:
 
         return corrupt
 
-    def _checksum_compare(self, file_path, product_info, block_size=2 ** 13):
+    def _checksum_compare(self, file_path, product_info, block_size=2**13):
         """Compare a given MD5 checksum with one calculated from a file."""
         if "sha3-256" in product_info:
             checksum = product_info["sha3-256"]
@@ -1015,7 +1019,6 @@ class SentinelAPI:
         # Prevent requests from needing to guess the encoding
         # SciHub appears to be using UTF-8 in all of their responses
         response.encoding = "utf-8"
-        return
         try:
             response.raise_for_status()
             if test_json:
@@ -1069,7 +1072,7 @@ class SentinelAPI:
 
     def _path_to_url(self, product_info, path, urltype=None):
         id = product_info["id"]
-        title = product_info["title"]
+        root_dir = product_info["product_root_dir"]
         path = "/".join(["Nodes('{}')".format(item) for item in path.split("/")])
         if urltype == "value":
             urltype = "/$value"
@@ -1080,14 +1083,15 @@ class SentinelAPI:
         elif urltype is None:
             urltype = ""
         # else: pass urltype as is
-        return self._get_odata_url(id, f"/Nodes('{title}.SAFE')/{path}{urltype}")
+        return self._get_odata_url(id, f"/Nodes('{root_dir}')/{path}{urltype}")
 
     def _get_manifest(self, product_info, path=None):
         path = Path(path) if path else None
-        url = self._path_to_url(product_info, "manifest.safe", "value")
+        manifest_name = product_info["manifest_name"]
+        url = self._path_to_url(product_info, manifest_name, "value")
         node_info = product_info.copy()
         node_info["url"] = url
-        node_info["node_path"] = "./manifest.safe"
+        node_info["node_path"] = f"./{manifest_name}"
         del node_info["md5"]
 
         if path and path.exists():
@@ -1096,7 +1100,7 @@ class SentinelAPI:
             node_info["size"] = len(data)
             return node_info, data
 
-        url = self._path_to_url(product_info, "manifest.safe", "json")
+        url = self._path_to_url(product_info, manifest_name, "json")
         with self.dl_limit_semaphore:
             response = self.session.get(url)
         self._check_scihub_response(response)

@@ -1,5 +1,5 @@
 import sys
 
-from .scripts.cli import cli as main
+from lb_toolkits.utils.scripts.cli import cli as main
 
 sys.exit(main())

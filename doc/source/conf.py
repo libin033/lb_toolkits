@@ -36,13 +36,16 @@ author = 'Lee'
 # built documents.
 #
 # The short X.Y version.
+
+# from lb_toolkits.version import get_versions
+# version = get_versions()['version']
+# del get_versions
+
 with open(os.path.join("../..", "lb_toolkits", "__init__.py"), "rt") as fp:
     version = re.search(r'__version__\s*=\s*"(\S+)"', fp.read()).group(1)
 
 # The full version, including alpha/beta/rc tags.
 release = version
-
-# release = '1.1.10'
 
 
 # -- General configuration ---------------------------------------------------

@@ -72,7 +72,7 @@ class downloadEarthdata(cmr):
                                    **kwargs)
         return filelist
 
-    def download(self, outdir, url, timeout=5 * 60, skip=False, wgetpath=None, **kwargs):
+    def download(self, outdir, url, timeout=5*60, skip=False, wgetpath=None, **kwargs):
         '''
         根据输入url下载相应的文件
 

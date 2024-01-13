@@ -192,7 +192,7 @@ def validate_query_param(ctx, param, kwargs):
     "--gnss",
     is_flag=True,
     help="""Use the "https://scihub.copernicus.eu/gnss" end-point
-    for orbital data query and download.
+    for orbit data query and download.
     """,
 )
 @click.option(

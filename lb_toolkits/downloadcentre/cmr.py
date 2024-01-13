@@ -29,7 +29,7 @@ import platform
 import glob
 
 from lb_toolkits import docs
-from lb_toolkits.tools import readjson, writejson
+from lb_toolkits.tools.jsonpro import readjson, writejson
 from lb_toolkits.tools import wget
 from urllib.request import urlopen, Request
 

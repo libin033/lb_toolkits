@@ -20,7 +20,6 @@ import datetime
 import shutil
 import platform
 from lb_toolkits.tools import wget
-# from .config import WGET
 
 CH4_L2_Info = {
     'V03.05' : [datetime.datetime.strptime('20090401', '%Y%m%d'), datetime.datetime.utcnow()],
@@ -35,15 +34,17 @@ CO2_L2_Info = {
 }
 
 CH4_L3_Info = {
-    'V03.00' : [datetime.datetime.strptime('20230601', '%Y%m%d'), datetime.datetime.utcnow()],
-    'V02.91' : [datetime.datetime.strptime('20200601', '%Y%m%d'), datetime.datetime.strptime('20230531', '%Y%m%d')],
+    'V03.05' : [datetime.datetime.strptime('20090601', '%Y%m%d'), datetime.datetime.utcnow()],
+    # 'V03.00' : [datetime.datetime.strptime('20230601', '%Y%m%d'), datetime.datetime.utcnow()],
+    'V02.91' : [datetime.datetime.strptime('20200601', '%Y%m%d'), datetime.datetime.strptime('20230331', '%Y%m%d')],
     'V02.90' : [datetime.datetime.strptime('20090601', '%Y%m%d'), datetime.datetime.strptime('20200531', '%Y%m%d')],
 
 }
 
 CO2_L3_Info = {
-    'V03.00' : [datetime.datetime.strptime('20230601', '%Y%m%d'), datetime.datetime.utcnow()],
-    'V02.91' : [datetime.datetime.strptime('20200601', '%Y%m%d'), datetime.datetime.strptime('20230531', '%Y%m%d')],
+    'V03.05' : [datetime.datetime.strptime('20090601', '%Y%m%d'), datetime.datetime.utcnow()],
+    # 'V03.00' : [datetime.datetime.strptime('20230601', '%Y%m%d'), datetime.datetime.strptime('20230331', '%Y%m%d')],
+    'V02.91' : [datetime.datetime.strptime('20200601', '%Y%m%d'), datetime.datetime.strptime('20230331', '%Y%m%d')],
     'V02.90' : [datetime.datetime.strptime('20090601', '%Y%m%d'), datetime.datetime.strptime('20200531', '%Y%m%d')],
 
 }

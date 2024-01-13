@@ -1,7 +1,7 @@
 import fnmatch
 import warnings
 
-from .sentinel import SentinelAPI
+from lb_toolkits.utils.sentinel import SentinelAPI
 
 
 class SentinelProductsAPI(SentinelAPI):

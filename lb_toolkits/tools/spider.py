@@ -19,7 +19,7 @@ import requests
 
 from tqdm import tqdm
 from bs4 import BeautifulSoup
-from lb_toolkits.tools import writejson
+from lb_toolkits.tools.jsonpro import writejson
 
 
 class spiderdownload(object):
@@ -200,15 +200,21 @@ class spiderdownload(object):
                             if chunk:
                                 f.write(chunk)
                                 pbar.update(len(chunk))
+            print(file_size, os.path.getsize(tempfile))
             if file_size == os.path.getsize(tempfile):
                 shutil.move(tempfile, local_filename)
-
-            if file_size == -1 :
+                print('成功下载【%s】' %(local_filename))
+            elif file_size == -1 :
                 shutil.move(tempfile, local_filename)
+                print('成功下载【%s】' %(local_filename))
+            elif file_size <  os.path.getsize(tempfile) :
+                print('下载错误，重新下载【%s】' %(local_filename))
+                self._download(outdir, url, timeout, chunk_size=chunk_size, skip=skip, cover=cover)
+            else:
+                print('下载失败【%s】' %(local_filename))
         except requests.exceptions.Timeout:
             print("连接超时【{}】".format(timeout))
             return None
-        print('成功下载【%s】' %(local_filename))
 
         return local_filename
 

@@ -20,15 +20,15 @@ import time
 
 from lb_toolkits.tools import ftppro
 from lb_toolkits.tools import writejson
+from config import H8_FTP_URL
 
-
-FTPHOST='ftp.ptree.jaxa.jp'
+# FTPHOST='ftp.ptree.jaxa.jp'
 
 class downloadH8(object):
 
     def __init__(self, username, password):
 
-        self.ftp = ftppro(FTPHOST, username, password)
+        self.ftp = ftppro(H8_FTP_URL, username, password)
 
     def search_ahi8_l1_netcdf(self, starttime, endtime=None, pattern=None, skip=False):
         '''
@@ -202,6 +202,7 @@ class downloadH8(object):
 
     def GetFileList(self, starttime, endtime, srcpath, pattern=None):
         ''' 根据输入时间，匹配获取H8 L1数据文件名  '''
+
         downfiles = []
 
         srcpath = srcpath.replace('\\', '/')

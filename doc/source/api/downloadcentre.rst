@@ -8,8 +8,6 @@ downloadcentre
  * spider下载: LandSat、sentinel、TANSAT
  * 再分析资料：EAR5、GFS等
 
-中分辨率卫星
-=================================
 
 downloadFY(风云系列)
 -----------------------------------------
@@ -54,8 +52,6 @@ downloadEarthdata（Earthdata上的数据都支持）
     :undoc-members:
     :show-inheritance:
 
-高分辨率卫星
-========================================
 
 downloadSentinel（哨兵1、2、3、5P）
 -----------------------------------------
@@ -74,8 +70,6 @@ downloadLandsat（Landsat8、9）
     :undoc-members:
     :show-inheritance:
 
-温室气体（痕量气体）
-========================================
 
 downloadTANSAT
 -----------------------------------------
@@ -103,8 +97,6 @@ downloadGOSAT（GOSAT的 CO2、CH4、H2O）
     :undoc-members:
     :show-inheritance:
 
-激光雷达
-========================================
 
 downloadCALIPSO
 -----------------------------------------
@@ -115,8 +107,6 @@ downloadCALIPSO
     :show-inheritance:
 
 
-预报、再分析
-=========================================
 
 downloadERA5
 -----------------------------------------
@@ -136,8 +126,6 @@ downloadGFS
     :show-inheritance:
 
 
-其他
-=========================================
 
 downloadTle
 -----------------------------------------

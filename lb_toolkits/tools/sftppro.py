@@ -193,12 +193,13 @@ class sftppro(object):
             self.makedirs(path)
             try:
                 self.sftp.mkdir(os.path.join(path, filename))
-                print('创建远程文件夹【%s】成功' %())
+                print('创建远程文件夹成功【%s】' %(os.path.join(path, filename)))
             except BaseException as e:
-                raise Exception('create remote path ==>> %s error!!!' %(os.path.join(path, filename)))
+                raise Exception('创建远程文件夹失败【%s】' %(os.path.join(path, filename)))
 
     def _upload(self, local_filename, remote_path, retry=3, okstatus=False, reupload=False):
-        # 判断远程端目录是否存在，如果不存在，则创建
+        ''' 判断远程端目录是否存在，如果不存在，则创建 '''
+
         filename = os.path.basename(local_filename)
         remote_filename = os.path.join(remote_path, filename)
         PathFlag = False
@@ -264,6 +265,8 @@ class sftppro(object):
         :return:
         '''
 
+        if os.path.isfile(localpath) :
+            os.remove(localpath)
 
         continuing = os.path.isfile(localpath)
         if continuing:

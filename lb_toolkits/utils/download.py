@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict
 from xml.etree import ElementTree as etree
 
-from .exceptions import (
+from lb_toolkits.utils.exceptions import (
     InvalidChecksumError,
     LTAError,
     LTATriggered,
@@ -86,7 +86,7 @@ class Downloader:
         lta_retry_delay=60,
         lta_timeout=None
     ):
-        from .sentinel import SentinelAPI
+        from lb_toolkits.utils import SentinelAPI
 
         self.api: SentinelAPI = api
         self.logger = self.api.logger
@@ -100,7 +100,7 @@ class Downloader:
         self.dl_retry_delay = dl_retry_delay
         self.lta_retry_delay = lta_retry_delay
         self.lta_timeout = lta_timeout
-        self.chunk_size = 2 ** 20  # download in 1 MB chunks by default
+        self.chunk_size = 2**20  # download in 1 MB chunks by default
 
     def download(self, id, directory=".", *, stop_event=None):
         """Download a product.
@@ -145,20 +145,16 @@ class Downloader:
         # An incomplete download triggers the retrieval from the LTA if the product is not online
         if not self.api.is_online(id):
             self.trigger_offline_retrieval(id)
-            # raise LTATriggered(id)
-            print('Product 【{}】 is not online. Triggered retrieval from the Long Term Archive.'.format(
-                id
-            ))
-            return product_info
+            raise LTATriggered(id)
 
         self._download_common(product_info, path, stop_event)
         return product_info
 
     def _download_with_node_filter(self, id, directory, stop_event):
         product_info = self.api.get_product_odata(id)
-        product_path = Path(directory) / (product_info["title"] + ".SAFE")
-        product_info["node_path"] = "./" + product_info["title"] + ".SAFE"
-        manifest_path = product_path / "manifest.safe"
+        product_path = Path(directory) / (product_info["product_root_dir"])
+        product_info["node_path"] = "./" + product_info["product_root_dir"]
+        manifest_path = product_path / product_info["manifest_name"]
         if not manifest_path.exists() and self.trigger_offline_retrieval(id):
             raise LTATriggered(id)
         manifest_info, _ = self.api._get_manifest(product_info, manifest_path)
@@ -227,15 +223,12 @@ class Downloader:
                 stop_event,
             )
         # Check integrity with MD5 checksum
-        # if self.verify_checksum is True:
-        #     if not self.api._checksum_compare(temp_path, product_info):
-        #         temp_path.unlink()
-        #         raise InvalidChecksumError("File corrupt: checksums do not match")
+        if self.verify_checksum is True:
+            if not self.api._checksum_compare(temp_path, product_info):
+                temp_path.unlink()
+                raise InvalidChecksumError("File corrupt: checksums do not match")
         # Download successful, rename the temporary file to its proper name
-        if temp_path.exists():
-            size = temp_path.stat().st_size
-            if size == product_info["size"]:
-                shutil.move(temp_path, path)
+        shutil.move(temp_path, path)
         return product_info
 
     def download_all(self, products, directory="."):
@@ -728,7 +721,6 @@ class Downloader:
         raise last_exception
 
     def _download(self, url, path, file_size, title, stop_event):
-        print('下载地址："%s"' %(url))
         headers = {}
         continuing = path.exists()
         if continuing:
@@ -738,9 +730,10 @@ class Downloader:
             already_downloaded_bytes = 0
         downloaded_bytes = 0
         with self.api.dl_limit_semaphore:
+            print(url)
             r = self.api.session.get(url, stream=True, headers=headers)
         with self._tqdm(
-            desc=f"正在下载【{title}】",
+            desc=f"正在下载 {title}",
             total=file_size,
             unit="B",
             unit_scale=True,
@@ -777,7 +770,7 @@ class Downloader:
             node_info["md5"] = dataobj_info["md5"]
         if "sha3-256" in dataobj_info:
             node_info["sha3-256"] = dataobj_info["sha3-256"]
-        node_info["node_path"] = dataobj_info["href"]
+        node_info["node_path"] = path
         # node_info["parent"] = product_info
 
         return node_info

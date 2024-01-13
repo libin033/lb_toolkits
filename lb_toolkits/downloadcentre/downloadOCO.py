@@ -105,41 +105,4 @@ class downloadOCO(cmr):
         filename = wget(outdir, url, username=self.username, password=self.password,
              tries=tries, skip=skip, cover=cover, timeout=timeout, wgetpath=wgetpath)
 
-        # filename = self._download(outdir, url, timeout=timeout, skip=skip)
-
         return filename
-
-    # def _download(self, outdir, url, timeout, chunk_size=1024, skip=False):
-    #     local_filename = os.path.basename(url)
-    #     local_filename = os.path.join(outdir, local_filename)
-    #     if skip :
-    #         return local_filename
-    #
-    #     if os.path.isfile(local_filename) :
-    #         return local_filename
-    #
-    #     tempfile = local_filename + '.download'
-    #
-    #     if platform.system().lower() == 'windows' :
-    #         cmd = f'{WGET} {url} -c --tries=3 ' \
-    #               f'--http-user={self.username} ' \
-    #               f'--http-passwd={self.password} ' \
-    #               f'--timeout={timeout}' \
-    #               f'  -O {tempfile}'
-    #     else:
-    #         cmd = f'{WGET} {url}  -c --tries=3 ' \
-    #               f'--http-user={self.username} ' \
-    #               f'--http-passwd={self.password} ' \
-    #               f'--timeout={timeout}' \
-    #               f'  -O {tempfile}'
-    #     print('执行下载命令: 【%s】' %(cmd))
-    #     os.system(cmd)
-    #
-    #     if os.path.isfile(local_filename) :
-    #         os.remove(local_filename)
-    #
-    #     if os.path.isfile(tempfile) :
-    #         shutil.move(tempfile, local_filename)
-    #
-    #     return local_filename
-

@@ -99,8 +99,6 @@ def wget(outdir, url, username=None, password=None, token=None,
          tries=3, skip=False, cover=False, timeout=5*60, wgetpath=None, options=None):
     ''' 通过wget方式进行数据下载 '''
 
-    WGET = get_wget(wgetpath)
-
     local_filename = os.path.basename(url)
     local_filename = os.path.join(outdir, local_filename)
     if skip :
@@ -116,6 +114,7 @@ def wget(outdir, url, username=None, password=None, token=None,
 
     tempfile = local_filename + '.download'
 
+    WGET = get_wget(wgetpath)
     cmd = [f'{WGET}']
     if username is not None and password is not None :
         cmd.append(f'--http-user={username} --http-passwd={password}')

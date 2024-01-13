@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 '''
-@Project  : lb_toolkits
+@Project  : fypy
 
 @File     : jsonpro.py
 

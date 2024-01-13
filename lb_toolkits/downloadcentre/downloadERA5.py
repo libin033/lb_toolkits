@@ -19,6 +19,8 @@ import cdsapi
 import datetime
 
 def checkkeys(url, key) :
+    ''' 检查密钥 '''
+
     keyfile = os.environ.get("CDSAPI_RC", os.path.expanduser("~/.cdsapirc"))
     if not os.path.isfile(keyfile):
         print('【%s】不存在，将创建它' %(keyfile))
@@ -113,7 +115,7 @@ def download_era5_profile(outname, nowtime, variable, pressure, area_info=None,
         'reanalysis-era5-pressure-levels',
         downinfo,
         outname)
-    print('download ==>[%s]  success...' %(outname))
+    print('成功下载【%s】' %(outname))
 
 def download_era5_surface(outname, nowtime, variable, area_info=None,
                           format='netcdf', m_client=None, redownload=False,
@@ -187,7 +189,7 @@ def download_era5_surface(outname, nowtime, variable, area_info=None,
         'reanalysis-era5-single-levels',
         downinfo,
         outname )
-    print('download ==>[%s]  success...' %(outname))
+    print('成功下载【%s】' %(outname))
 
 
 
