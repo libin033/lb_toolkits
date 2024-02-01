@@ -28,15 +28,8 @@ class downloadEarthdata(cmr):
 
         self.token = self.get_tokens(username, password)
 
-    def searchfile(
-            self,
-            starttime,
-            endtime,
-            shortname,
-            provider=None,
-            version=None,
-            **kwargs
-    ):
+    def searchfile(self, shortname, starttime, endtime=None,
+                   provider=None, version=None, **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -44,32 +37,28 @@ class downloadEarthdata(cmr):
         ----------
         starttime : datetime
             起始时间
-        endtime : datetime
+        endtime : datetime, optional
             起始时间
-        prodversion : str
+        shortname : str
             对应cmr中的short name
         provider : str, optional
             产品提供的组织结构
+        pattern : str or list
+            预留接口，对文件名进行模糊匹配（未实现改功能）
         Returns
         -------
             list
             根据条件所匹配到的产品下载链接
         '''
 
-        # CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-        #                   'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
-
         if not self.cmr_check_provider(shortname=shortname, provider=provider, version=version) :
-            raise Exception('请参考Short Name>>"%s"' %(
-                'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis'))
+            return []
 
         if endtime is None :
             endtime = starttime
 
-        filelist = self.cmr_search(starttime=starttime,
-                                   endtime=endtime,
-                                   short_name=shortname,
-                                   **kwargs)
+        filelist = self.cmr_search(starttime=starttime, endtime=endtime,
+                                   short_name=shortname, version=version, **kwargs)
         return filelist
 
     def download(self, outdir, url, timeout=5*60, skip=False, wgetpath=None, **kwargs):

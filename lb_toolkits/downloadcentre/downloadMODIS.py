@@ -39,9 +39,8 @@ class downloadMODIS(cmr):
         self.password = password
         self.token = self.get_tokens(username, password)
 
-    def searchfile(self, starttime, endtime=None,
-                   shortname='MOD021KM', provider='LAADS',
-                   version='6.1', **kwargs):
+    def searchfile(self, shortname, starttime, endtime=None,
+                   provider=None, version=None, **kwargs):
         '''
         利用cmr进行查询检索相关产品的下载地址
 
@@ -63,11 +62,8 @@ class downloadMODIS(cmr):
             根据条件所匹配到的产品下载链接
         '''
 
-        CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
-                          'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
-
         if not self.cmr_check_provider(shortname=shortname, provider=provider, version=version) :
-            raise Exception('请参考Short Name>>"%s"' %(CMR_ProviderURL))
+            return []
 
         if endtime is None :
             endtime = starttime

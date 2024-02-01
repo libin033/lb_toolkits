@@ -18,7 +18,7 @@ import json
 
 version_json = '''
 {
- "version": "1.2.5"
+ "version": "1.2.6"
 }
 '''  # END VERSION_JSON
 

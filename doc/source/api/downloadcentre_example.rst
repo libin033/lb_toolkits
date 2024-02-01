@@ -153,10 +153,41 @@ downloadMODIS
 .. code-block:: python
 
     from lb_toolkits.downloadcentre import downloadMODIS
-    down = downloadMODIS(username, password)
-    nowdate = datetime.datetime.strptime('20180329', '%Y%m%d')
-    fils = down.searchfile(nowdate)
 
+    down = downloadMODIS(username=username_nasa, password=password_nasa)
+    startdate = datetime.datetime.strptime('20220101', '%Y%m%d')
+    enddate = datetime.datetime.strptime('20221231', '%Y%m%d')
+
+    fils = down.searchfile(shortname='MOD13A2', starttime=startdate, endtime=enddate,
+                           bounding_box=[73.5, 3.5, 135.1, 53.6])
+    for file in fils :
+        if not file.endswith('hdf') :
+            continue
+        print(file)
+        down.download(r'./data', file)
+
+    # 在不确定shortname情况下，可以通过searchShortName接口进行模糊查询获取shortname
+    # match = down.searchShortName('MOD21')
+    # for key in match :
+    #     print(key)
+    # exit(0)
+
+
+downloadEarthdata
+-----------------------------------------
+
+.. code-block:: python
+
+    from lb_toolkits.downloadcentre import downloadEarthdata
+
+    down = downloadEarthdata(username=username_nasa, password=password_nasa)
+
+    startdate = datetime.datetime.strptime('20180101', '%Y%m%d')
+    enddate = datetime.datetime.strptime('20180103', '%Y%m%d')
+
+    fils = down.searchfile(shortname='MOD35_L2', provider='LAADS',
+                           starttime=startdate, endtime=enddate,
+                           bounding_box=[100.0, 30.0, 110.0, 50.0])
     for file in fils :
         print(file)
         down.download(r'./data', file)
@@ -255,4 +286,3 @@ downloadLandcover
     urllist = down.from_esri(r'./data/landcover',
                              datetime.datetime.strptime('2021', '%Y'),
                              extent=(70, 20, 120, 55))
-

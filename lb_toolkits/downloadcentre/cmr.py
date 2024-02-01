@@ -21,7 +21,7 @@ import netrc
 import shutil
 import ssl
 import sys
-
+import time
 import numpy as np
 import requests
 import datetime
@@ -155,7 +155,7 @@ class cmr() :
 
         parms += opts
         # parms += '&producer_granule_id[]={0}&options[producer_granule_id][pattern]=true'.format('*hdf')
-        print('查询链接:\n{0}\n'.format(parms))
+        print('查询链接:\n【{0}】\n'.format(parms))
 
         return self.cmr_get_urls(parms)
 
@@ -348,83 +348,33 @@ class cmr() :
 
         filename = wget(outdir, url, token=token, timeout=timeout,
                         skip=skip, cover=cover, wgetpath=wgetpath)
-        # filename = self._cmr_download(outdir, url, token=token,
-        #                               timeout=timeout, skip=skip, cover=cover)
 
         return filename
 
-    # def _cmr_download(self, outdir, url, token=None, timeout=5*60, tries=3,
-    #                   chunk_size=1024, skip=False, cover=False):
-    #     '''通过wget方式进行数据下载'''
-    #     local_filename = os.path.basename(url)
-    #     local_filename = os.path.join(outdir, local_filename)
-    #     if skip :
-    #         return local_filename
-    #
-    #     if os.path.isfile(local_filename) :
-    #         if cover :
-    #             print('文件已存在，将执行删除文件【%s】' %(local_filename))
-    #             os.remove(local_filename)
-    #         else:
-    #             print('文件已存在，跳过下载【%s】' %(local_filename))
-    #             return local_filename
-    #
-    #     tempfile = local_filename + '.download'
-    #
-    #     if platform.system().lower() == 'windows' :
-    #         cmd = f'{WGET} --tries={tries} --no-check-certificate ' \
-    #               f'-e robots=off -c -np -R .html,.tmp -nH --cut-dirs=10 {url} ' \
-    #               f'--header "Authorization: Bearer {token}" -O {tempfile}'
-    #     else:
-    #         cmd = f'{WGET} --tries={tries} --no-check-certificate ' \
-    #               f'-e robots=off -c -np -R .html,.tmp -nH --cut-dirs=10 {url} ' \
-    #               f'--header "Authorization: Bearer {token}" -O {tempfile}'
-    #
-    #     print('执行下载命令: 【%s】' %(cmd))
-    #     os.system(cmd)
-    #
-    #     if os.path.isfile(local_filename) :
-    #         os.remove(local_filename)
-    #
-    #     if os.path.isfile(tempfile) :
-    #         shutil.move(tempfile, local_filename)
-    #
-    #     return local_filename
-
-    def spidertable(self, url):
+    def spidertable(self, url, **kwargs):
         import pandas as pd
 
-        df1 = pd.read_html(url)
+        df1 = pd.read_html(url, **kwargs)
         df = df1[0]
 
         data = df.to_dict(orient='list')
 
         return data
 
-    def cmr_check_provider(self, shortname, provider=None, collection=None, version=None):
+    def cmr_check_provider(self, shortname, provider=None, version=None):
 
-        providerFlag = False
-        shortnameFlag = False
-        CollectionFlag = False
-        versionFlag = False
-
-        CMR_Provider_List = []
-        CMR_ShortName_List = []
-        CMR_Collection_List = []
-        CMR_Version_List = []
+        Dict_Match_Info = []
 
         # 第一次查询：从静态JSON文件中
-        CMR_Provider_Jsons = glob.glob(os.path.join(os.path.abspath(list(docs.__path__)[0]),
-                                                    'provider', '*.json'))
-        for filename in CMR_Provider_Jsons :
-            basename = os.path.basename(filename)
-            prodid = basename.split('.')[0]
+        Dict_Site_Info = self.spidertable(url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
+        CMR_Provider = Dict_Site_Info['Provider Name']
+        for prodid in CMR_Provider :
             if provider is not None :
                 if not prodid in [provider] :
                     continue
 
             # 读取JSON文件，获取提供站点信息
-            dict_data = readjson(filename)
+            dict_data = self.get_cmr_product_info(prodid)
             if not shortname in dict_data['Short Name'] :
                 continue
 
@@ -432,111 +382,186 @@ class cmr() :
             if len(index) == 0 :
                 continue
 
-            provider = prodid
-            CMR_Provider_List.append(prodid)
-            CMR_ShortName_List.extend(np.array(dict_data['Short Name'])[index])
-            CMR_Collection_List.extend(np.array(dict_data['Collection'])[index])
-            CMR_Version_List.extend(list(np.array(dict_data['Version'], dtype=np.str_)[index]))
+            for ind in index :
+                dict_temp = {
+                    'Provider' : prodid,
+                    'Short Name' : np.array(dict_data['Short Name'])[ind],
+                    'Collection' : np.array(dict_data['Collection'])[ind],
+                    'Version' : np.array(dict_data['Version'], dtype=np.str_)[ind],
+                }
+                Dict_Match_Info.append(dict_temp)
 
-        if len(CMR_Provider_List) > 1 :
-            raise Exception('该shortname【{}】有多个生产单位，请指定生产单位provider:{}'.format(
-                shortname, CMR_Provider_List))
-        elif len(CMR_Provider_List) == 1 :
-            provider = CMR_Provider_List[0]
+        if len(Dict_Match_Info) == 1:
+            print('='*100)
+            print('产品【%s】：生产单位【%s】, 版本【%s】, 产品描述【%s】' %(
+                shortname,
+                Dict_Match_Info[0]['Provider'],
+                Dict_Match_Info[0]['Version'],
+                Dict_Match_Info[0]['Collection']))
+            print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
+                  'collections/directory/{url}/gov.nasa.eosdis"'.format(url=Dict_Match_Info[0]['Provider']))
+            print('='*100)
+            return True
+        elif len(Dict_Match_Info) > 1 :
+            for item in Dict_Match_Info :
+                print('~'*100)
+                print('生产单位【%s】, 版本【%s】, 产品描述【%s】' %(item['Provider'], item['Version'], item['Collection']))
+                CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
+                                  'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
 
-        if not shortname in CMR_ShortName_List :
-            shortnameFlag = False
+                print('请参考Short Name【%s】"' %(CMR_ProviderURL))
+                print('~'*100)
 
-        if version is not None :
-            if not version in CMR_Version_List :
-                versionFlag = False
-        else:
-            if len(CMR_Version_List) > 1 :
-                raise Exception('该shortname【{}】有多个版本，请指定生产版本version:{}'.format(
-                    shortname, CMR_Version_List))
-            elif len(CMR_Version_List) == 1 :
-                version = CMR_Version_List[0]
+            print('该shortname【{}】有多个生产单位或版本，请指定生产单位或版本'.format(shortname))
+            return False
 
-        # 在JSON文件中未匹配到相应的产品信息
-        # 第二次查询：通过在线搜索方式进行查询
-        if not shortnameFlag or not versionFlag:
-            CMR_Provider_List = []
-            CMR_ShortName_List = []
-            CMR_Collection_List = []
-            CMR_Version_List = []
+        print('在JSON文件中未匹配到相应的产品信息，进行在线搜索方式查询')
+        for prodid in CMR_Provider :
+            dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
+                                         'collections/directory/{url}/gov.nasa.eosdis'.format(url=prodid))
+            if not shortname in dict_data['Short Name'] :
+                continue
 
-            if provider is None :
-                Dict_Site_Info = self.spidertable(
-                    url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
-                CMR_Provider = Dict_Site_Info['Provider Name']
-            else:
-                CMR_Provider = [provider]
+            index = self.get_list_index(dict_data['Short Name'], shortname)
+            if len(index) == 0 :
+                continue
 
-            for prodid in CMR_Provider :
-                dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
-                                             'collections/directory/{url}/gov.nasa.eosdis'.format(url=prodid))
+            for ind in index :
+                dict_temp = {
+                    'Provider' : prodid,
+                    'Short Name' : np.array(dict_data['Short Name'])[ind],
+                    'Collection' : np.array(dict_data['Collection'])[ind],
+                    'Version' : np.array(dict_data['Version'], dtype=np.str_)[ind],
+                }
+                Dict_Match_Info.append(dict_temp)
 
-                index = self.get_list_index(dict_data['Short Name'], shortname)
+            CMR_Provider_Json = os.path.join(os.path.abspath(list(docs.__path__)[0]),
+                                             'provider', '%s.json' %(prodid))
+            print(CMR_Provider_Json)
+            writejson(CMR_Provider_Json, dict_data)
+
+        if len(Dict_Match_Info) == 1:
+            print('='*100)
+            print('本产品【%s】生产单位：【%s】，版本【%s】' %(shortname, provider, version))
+            print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
+                  'collections/directory/{url}/gov.nasa.eosdis"'.format(url=provider))
+            print('='*100)
+            return True
+        elif len(Dict_Match_Info) > 1 :
+            for item in Dict_Match_Info :
+                print('生产单位【%s】, 版本【%s】, 产品描述【%s】' %(item['Provider'], item['Version'], item['Collection']))
+                CMR_ProviderURL = 'https://cmr.earthdata.nasa.gov/search/site/' \
+                                  'collections/directory/{Provider}/gov.nasa.eosdis'.format(Provider=provider)
+
+                print('请参考Short Name【%s】"' %(CMR_ProviderURL))
+                print('~'*100)
+
+            print('该shortname【{}】有多个生产单位或版本，请指定生产单位或版本'.format(shortname))
+            return False
+
+        print('未匹配到shortname【%s】相关信息，可通过接口【self.searchShortName】进行模糊查询获取' %(shortname))
+
+        return False
+
+    def searchShortName(self, shortname):
+        ''' 根据shortname进行模糊查询 '''
+
+        searchNameList = shortname.split('*')
+
+        Dict_Match_Info = []
+        # 第一次查询：从静态JSON文件中
+        Dict_Site_Info = self.spidertable(
+            url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
+        CMR_Provider = Dict_Site_Info['Provider Name']
+        for prodid in CMR_Provider :
+
+            # 读取JSON文件，获取提供站点信息
+            dict_data = self.get_cmr_product_info(prodid)
+            for item in dict_data['Short Name'] :
+                matchflag = False
+                for key in searchNameList :
+                    if key.lower() not in item.lower() :
+                        matchflag = False
+                        break
+                    else:
+                        matchflag = True
+
+                if not matchflag :
+                    continue
+
+                index = self.get_list_index(dict_data['Short Name'], item)
                 if len(index) == 0 :
                     continue
 
-                CMR_Provider_List.append(prodid)
-                CMR_ShortName_List.extend(np.array(dict_data['Short Name'])[index])
-                CMR_Collection_List.extend(np.array(dict_data['Collection'])[index])
-                CMR_Version_List.extend(list(np.array(dict_data['Version'], dtype=np.str_)[index]))
+                for ind in index :
+                    dict_temp = {
+                        'Provider' : prodid,
+                        'Short Name' : np.array(dict_data['Short Name'])[ind],
+                        'Collection' : np.array(dict_data['Collection'])[ind],
+                        'Version' : np.array(dict_data['Version'], dtype=np.str_)[ind],
+                    }
+                    Dict_Match_Info.append(dict_temp)
 
-                provider = prodid
-                CMR_Provider_Json = os.path.join(os.path.abspath(list(docs.__path__)[0]),
-                                                            'provider', '%s.json' %(prodid))
-                print(CMR_Provider_Json)
-                writejson(CMR_Provider_Json, dict_data)
+        # 匹配成功则返回匹配信息
+        if len(Dict_Match_Info) > 0 :
+            return Dict_Match_Info
 
-        if len(CMR_Provider_List) > 1 :
-            raise Exception('该shortname【{}】有多个生产单位，请指定生产单位provider:{}'.format(
-                shortname, CMR_Provider_List))
-        elif len(CMR_Provider_List) == 1 :
-            provider = CMR_Provider_List[0]
-            providerFlag = True
+        # 在JSON文件中未匹配到相应的产品信息，则进行在线搜索方式进行查询
+        for prodid in CMR_Provider :
+            dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
+                                         'collections/directory/{url}/gov.nasa.eosdis'.format(url=prodid))
 
-        if shortname is not None :
-            if shortname in CMR_ShortName_List :
-                shortnameFlag = True
-            else:
-                raise Exception('输入的shortname参数【{}】错误，当前仅支持shortname:{}'.format(
-                    shortname, CMR_ShortName_List))
+            for item in dict_data['Short Name'] :
+                matchflag = False
+            for key in searchNameList :
+                if key not in item :
+                    matchflag = False
+                    break
+                else:
+                    matchflag = True
 
-        if collection is not None :
-            if collection in CMR_Collection_List :
-                CollectionFlag = True
-            else:
-                raise Exception('输入的Collection参数【{}】错误，当前仅支持Collection:{}'.format(
-                    collection, CMR_Collection_List))
+            if not matchflag :
+                continue
+
+            index = self.get_list_index(dict_data['Short Name'], item)
+            if len(index) == 0 :
+                continue
+
+            for ind in index :
+                dict_temp = {
+                    'Provider' : prodid,
+                    'Short Name' : np.array(dict_data['Short Name'])[ind],
+                    'Collection' : np.array(dict_data['Collection'])[ind],
+                    'Version' : np.array(dict_data['Version'], dtype=np.str_)[ind],
+                }
+                Dict_Match_Info.append(dict_temp)
+
+            # 在线匹配成功后，更新库里的文件信息
+            CMR_Provider_Json = os.path.join(os.path.abspath(list(docs.__path__)[0]),
+                                             'provider', '%s.json' %(prodid))
+            writejson(CMR_Provider_Json, dict_data)
+
+        return Dict_Match_Info
+
+
+    def get_cmr_product_info(self, provider):
+
+        CMR_Provider_Json = os.path.join(os.path.abspath(list(docs.__path__)[0]),
+                                         'provider', '%s.json' %(provider))
+
+        if os.path.isfile(CMR_Provider_Json) and ((time.time() - os.stat(CMR_Provider_Json).st_mtime ) < 24*60*60*10) :
+            dict_data = readjson(CMR_Provider_Json)
         else:
-            CollectionFlag = True
+            dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
+                                         'collections/directory/{url}/gov.nasa.eosdis'.format(url=provider),
+                                         converters={'Version':str})
+            dirname = os.path.dirname(CMR_Provider_Json)
+            if not os.path.isdir(dirname) :
+                os.makedirs(dirname)
 
-        if version is not None :
-            if not version in CMR_Version_List :
-                raise Exception('输入的version参数【{}】错误，当前仅支持version:{}'.format(
-                    version, set(CMR_Version_List)))
-                versionFlag = False
-            else:
-                versionFlag = True
-
-        print('='*100)
-        print('本产品【%s】生产单位：【%s】' %(shortname, provider))
-        print('相关详细信息参考："https://cmr.earthdata.nasa.gov/search/site/'
-              'collections/directory/{url}/gov.nasa.eosdis"'.format(url=provider))
-        print('='*100)
-
-        return providerFlag & shortnameFlag & CollectionFlag & versionFlag
-
-    def get_cmr_product_info(self, provider, shortname):
-
-        dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
-                                     'collections/directory/{url}/gov.nasa.eosdis'.format(url=provider))
+            writejson(CMR_Provider_Json, dict_data)
 
         return dict_data
-
 
     def get_list_index(self, srclist, patter) :
 
@@ -547,4 +572,4 @@ class cmr() :
                 if patter in [item] :
                     index.append(i)
 
-        return np.array(index, dtype=np.int)
+        return np.array(index, dtype=np.int32)

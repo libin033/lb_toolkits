@@ -20,7 +20,7 @@ import time
 
 from lb_toolkits.tools import ftppro
 from lb_toolkits.tools import writejson
-from config import H8_FTP_URL
+from .config import H8_FTP_URL
 
 # FTPHOST='ftp.ptree.jaxa.jp'
 
