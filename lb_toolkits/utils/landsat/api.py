@@ -11,7 +11,7 @@ import time
 import requests
 from shapely.geometry import Point, shape
 
-from lb_toolkits.utils.errors import USGSAuthenticationError, USGSError, USGSRateLimitError
+from lb_toolkits.utils.landsat import USGSAuthenticationError, USGSError, USGSRateLimitError
 
 
 API_URL = "https://m2m.cr.usgs.gov/api/api/json/stable/"

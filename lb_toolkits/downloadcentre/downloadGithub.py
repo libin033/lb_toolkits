@@ -26,93 +26,83 @@ from urllib import parse
 from lb_toolkits import parm
 
 exedir = os.path.abspath(list(parm.__path__)[0])
+from lb_toolkits.tools import spiderdownload
 
-def downloadGithub(dstdir, giturl=None,
-                   username=None, repositories=None,
-                   srcdir=None, branches='master') :
+class downloadGithub :
 
-    from lb_toolkits.tools import spiderdownload
+    def __init__(self, username=None):
 
-    if giturl is None :
-        if username is None or repositories is None or srcdir is None :
-            raise Exception('请设置【giturl】或者【username, repositories, srcdir】参数')
-        else:
-            # url = 'https://raw.githubusercontent.com/{username}/{repositories}/{branches}/{srcdir}'.format(
-            #     username=username,
-            #     repositories=repositories,
-            #     srcdir=srcdir,
-            #     branches=branches)
-            giturl = 'https://github.com/{username}/{repositories}/tree/{branches}/{srcdir}'.format(
-                username=username,
-                repositories=repositories,
-                srcdir=srcdir,
-                branches=branches)
+        self.username=username
 
-    urllist = GetGitUrl(giturl)
+    def searfile(self, giturl=None, repositories=None,
+                       srcdir=None, branches='master') :
 
-    spider = spiderdownload()
-    for srcurl in urllist :
+        if giturl is None :
+            if self.username is None or repositories is None or srcdir is None :
+                raise Exception('请设置【giturl】或者【username, repositories, srcdir】参数')
+            else:
+                giturl = 'https://github.com/{username}/{repositories}/tree/{branches}/{srcdir}'.format(
+                    username=self.username,
+                    repositories=repositories,
+                    srcdir=srcdir,
+                    branches=branches)
+
+        return self.GetGitUrl(giturl)
+
+    def download(self, dstdir, srcurl):
+        spider = spiderdownload()
 
         url = srcurl.replace('github.com', 'raw.githubusercontent.com')
         url = url.replace('/blob', '')
         url = url.replace('/tree', '')
         urlunqot = parse.unquote(url)
-        print(urlunqot)
-        spider.download(dstdir, urlunqot)
 
-def GetGitUrl(giturl):
-    ''' 爬虫获取url中的链接'''
+        filename = spider.download(dstdir, urlunqot)
+        del spider
 
-    # print(giturl)
-    session = requests.Session()
-    res = session.get(giturl)
-    # print(res.text)
-    if not 'payload' in res.text :
-        return []
+        return filename
 
-    resjson = json.loads(res.text)
-    session.close()
+    def GetGitUrl(self, giturl):
+        ''' 爬虫获取url中的链接'''
 
-    matchurl = []
+        # print(giturl)
+        session = requests.Session()
+        res = session.get(giturl)
+        if not 'payload' in res.text :
+            return []
 
-    if 'payload' in resjson :
-        payload = resjson['payload']
-        for item in payload['tree']['items'] :
-            if item['contentType'] in ['directory'] :
-                srcurl = giturl + '/' + item['name']
-                url = GetGitUrl(srcurl)
-                if len(url) != 0 :
-                    matchurl.extend(url)
-            elif item['contentType'] in ['file'] :
-                srcurl = giturl + '/' + item['name']
-                matchurl.append(srcurl)
+        resjson = json.loads(res.text)
+        session.close()
 
-    return matchurl
+        matchurl = []
 
+        if 'payload' in resjson :
+            payload = resjson['payload']
+            if 'tree' in payload :
+                for item in payload['tree']['items'] :
+                    if item['contentType'] in ['directory'] :
+                        srcurl = giturl + '/' + item['name']
 
-def unzip(outname, srcname):
-    outdir = os.path.dirname(outname)
-    basename = os.path.basename(outname)
+                        url = self.GetGitUrl(srcurl)
+                        if len(url) != 0 :
+                            matchurl.extend(url)
+                    elif item['contentType'] in ['file'] :
+                        srcurl = giturl + '/' + item['name']
+                        matchurl.append(srcurl)
 
-    if os.path.isfile(srcname) :
-        fp = zipfile.ZipFile(srcname, 'r')
-        for item in fp.filelist :
-            srcfile = item.filename
+            if 'fileTree' in payload :
+                return [giturl]
+                for tree in payload['fileTree'] :
+                    for item in payload['fileTree'][tree]['items'] :
+                        if item['contentType'] in ['directory'] :
+                            srcurl = giturl + '/' + item['name']
 
-            if os.path.basename(srcfile) in [basename] :
-                if not os.path.isdir(outdir) :
-                    os.makedirs(outdir)
-                fp.extract(item, outdir)
-                shutil.move(os.path.join(outdir, item.filename), outdir)
-                shutil.rmtree(os.path.join(outdir, 'lb_toolkits-master'))
-        fp.close()
-        os.remove(srcname)
+                            url = self.GetGitUrl(srcurl)
+                            if len(url) != 0 :
+                                matchurl.extend(url)
+                        elif item['contentType'] in ['file'] :
+                            srcurl = giturl + '/' + item['name']
+                            matchurl.append(srcurl)
 
-
-def downwgetfromgithub(dstfile, github_url='https://github.com/libin033/lb_toolkits/archive/refs/heads/master.zip'):
-    from lb_toolkits.tools import spiderdownload
-    spider = spiderdownload()
-    spider.download(exedir, github_url)
-    filename = os.path.join(exedir, 'master.zip')
-    unzip(dstfile, filename)
+        return matchurl
 

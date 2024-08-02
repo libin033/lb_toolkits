@@ -10,7 +10,7 @@
  
 '''
 
-from .downloadGithub import downwgetfromgithub
+from .downloadGithub import downloadGithub
 from .cmr import cmr
 
 

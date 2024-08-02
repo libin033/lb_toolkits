@@ -23,7 +23,7 @@ import platform
 from lb_toolkits import parm
 
 exedir = os.path.abspath(list(parm.__path__)[0])
-from lb_toolkits.downloadcentre import downwgetfromgithub
+
 
 
 
@@ -41,19 +41,27 @@ def get_wget(path):
         wgetpath : str
 
     '''
+
     WGET = _find_path(path)
 
     if WGET is None :
+
+        from lb_toolkits.downloadcentre import downloadGithub
+
         if platform.system().lower() == 'windows' :
             WGET = os.path.join(exedir, 'bin', 'windows', 'wget.exe')
             if not os.path.isfile(WGET) :
-                downwgetfromgithub(WGET)
+                down = downloadGithub()
+                down.download(os.path.dirname(WGET),
+                              'https://github.com/libin033/lb_toolkits/tree/master/lb_toolkits/parm/bin/windows/wget.exe')
                 if not os.path.isfile(WGET) :
                     raise Exception('wget工具不可用')
         else:
             WGET = os.path.join(exedir, 'bin', 'linux', 'wget')
             if not os.path.isfile(WGET) :
-                downwgetfromgithub(WGET)
+                down = downloadGithub()
+                down.download(os.path.dirname(WGET),
+                              'https://github.com/libin033/lb_toolkits/tree/master/lb_toolkits/parm/bin/linux/wget')
                 if not os.path.isfile(WGET) :
                     raise Exception('wget工具不可用')
 

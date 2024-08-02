@@ -9,15 +9,15 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict
 from urllib.parse import quote_plus, urljoin
-
+import json
 import geojson
 import geomet.wkt
 import html2text
 import requests
 from tqdm.auto import tqdm
 
-from lb_toolkits.utils.download import DownloadStatus, Downloader
-from lb_toolkits.utils.exceptions import (
+from lb_toolkits.utils.sentinel.download import DownloadStatus, Downloader
+from lb_toolkits.utils.sentinel.exceptions import (
     InvalidChecksumError,
     InvalidKeyError,
     QueryLengthError,
@@ -26,7 +26,12 @@ from lb_toolkits.utils.exceptions import (
     ServerError,
     UnauthorizedError,
 )
-from . import __version__ as sentinelsat_version
+from lb_toolkits.utils.sentinel import __version__ as sentinelsat_version
+
+
+URL_LOGIN    = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token'
+URL_SEARCH   = 'https://catalogue.dataspace.copernicus.eu/'
+URL_DOWNLOAD = 'https://download.dataspace.copernicus.eu/'
 
 
 class SentinelAPI:
@@ -66,21 +71,31 @@ class SentinelAPI:
     logger = logging.getLogger("sentinelsat.SentinelAPI")
 
     def __init__(
-        self,
-        user,
-        password,
-        api_url="https://apihub.copernicus.eu/apihub/",
-        show_progressbars=True,
-        timeout=60,
+            self,
+            user,
+            password,
+            api_url=URL_LOGIN,
+            show_progressbars=True,
+            timeout=60,
     ):
         self.session = requests.Session()
-        if user and password:
-            self.session.auth = (user, password)
-        self.api_url = api_url if api_url.endswith("/") else api_url + "/"
+        # if user and password:
+        #     self.session.auth = (user, password)
+        # # self.user_agent = "sentinelsat/" + sentinelsat_version
+        # # self.session.headers["User-Agent"] = self.user_agent
+        # self.session.headers["Content-Type"] = 'application/x-www-form-urlencoded'
+        # self.session.data = {
+        #     "username" : user,
+        #     "password" : password,
+        #     "grant_type" : "password",
+        #     "client_id" : "cdse-public"
+        # }
+        # self.session.timeout = timeout
+        self.token = self.getToken(user, password)
+        # self.api_url = api_url if api_url.endswith("/") else api_url + "/"
+        self.api_url = URL_SEARCH if URL_SEARCH.endswith("/") else URL_SEARCH + "/"
         self.page_size = 100
-        self.user_agent = "sentinelsat/" + sentinelsat_version
-        self.session.headers["User-Agent"] = self.user_agent
-        self.session.timeout = timeout
+
         self.show_progressbars = show_progressbars
         self._dhus_version = None
         # For unit tests
@@ -98,6 +113,280 @@ class SentinelAPI:
         self._lta_limit_semaphore = threading.BoundedSemaphore(self._concurrent_lta_trigger_limit)
 
         self.downloader = Downloader(self)
+
+    def getToken(self, username, password):
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = {
+            "username" : username,
+            "password" : password,
+            "grant_type" : "password",
+            "client_id" : "cdse-public"
+        }
+        resp = requests.post(URL_LOGIN, headers=headers, data=data)
+        if resp.status_code == 200 :
+            res = json.loads(resp.text)
+            token = res["access_token"]
+            # print('成功创建token【%s】' %(token))
+
+            return token
+        else:
+            print('创建token失败')
+            return None
+
+    def query(
+            self,
+            collection,
+            area=None,
+            date=None,
+            Options=None,
+            area_relation="Intersects",
+            order_by=None,
+            limit=1000,
+            offset=0,
+            **keywords
+    ):
+        """Query the OpenSearch API with the coordinates of an area, a date interval
+        and any other search keywords accepted by the API.
+
+        Parameters
+        ----------
+        area : str, optional
+            The area of interest formatted as a Well-Known Text string.
+        date : tuple of (str or datetime) or str, optional
+            A time interval filter based on the Sensing Start Time of the products.
+            Expects a tuple of (start, end), e.g. ("NOW-1DAY", "NOW").
+            The timestamps can be either a Python datetime or a string in one of the
+            following formats:
+
+                - yyyyMMdd
+                - yyyy-MM-ddThh:mm:ss.SSSZ (ISO-8601)
+                - yyyy-MM-ddThh:mm:ssZ
+                - NOW
+                - NOW-<n>DAY(S) (or HOUR(S), MONTH(S), etc.)
+                - NOW+<n>DAY(S)
+                - yyyy-MM-ddThh:mm:ssZ-<n>DAY(S)
+                - NOW/DAY (or HOUR, MONTH etc.) - rounds the value to the given unit
+
+            Alternatively, an already fully formatted string such as "[NOW-1DAY TO NOW]" can be
+            used as well.
+        Options : str, optional
+            Additional query text that will be appended to the query.
+        area_relation : {'Intersects', 'Contains', 'IsWithin'}, optional
+            What relation to use for testing the AOI. Case insensitive.
+
+                - Intersects: true if the AOI and the footprint intersect (default)
+                - Contains: true if the AOI is inside the footprint
+                - IsWithin: true if the footprint is inside the AOI
+
+        order_by: str, optional
+            A comma-separated list of fields to order by (on server side).
+            Prefix the field name by '+' or '-' to sort in ascending or descending order,
+            respectively. Ascending order is used if prefix is omitted.
+            Example: "cloudcoverpercentage, -beginposition".
+        limit: int, optional
+            Maximum number of products returned. Defaults -1 to no limit.
+        offset: int, optional
+            The number of results to skip. Defaults to 0.
+        **keywords
+            Additional keywords can be used to specify other query parameters,
+            e.g. `relativeorbitnumber=70`.
+            See https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/3FullTextSearch
+            for a full list.
+
+        Returns
+        -------
+        dict[string, dict]
+            Products returned by the query as a dictionary with the product ID as the key and
+            the product's attributes (a dictionary) as the value.
+        """
+        query = self.format_query(collection, date=date, Options=Options, area=area,
+                                  area_relation=area_relation, order_by=order_by,
+                                  limit=limit, offset=offset, **keywords)
+        if query.strip() == "":
+            # An empty query should return the full set of products on the server, which is a bit unreasonable.
+            # The server actually raises an error instead and it's better to fail early in the client.
+            raise ValueError("Empty query.")
+
+        # check query length - often caused by complex polygons
+        if self.check_query_length(query) > 1.0:
+            self.logger.warning(
+                "The query string is too long and will likely cause a bad DHuS response."
+            )
+
+        self.logger.debug(
+            "Running query: order_by=%s, limit=%s, offset=%s, query=%s",
+            order_by,
+            limit,
+            offset,
+            query,
+        )
+        formatted_order_by = _format_order_by(order_by)
+        response, count = self._load_query(query, formatted_order_by, limit, offset)
+        self.logger.info(f"Found {count:,} products")
+
+        return _parse_opensearch_response(response)
+
+
+    def format_query(self, collection, date=None, Options=None, area=None, area_relation="Intersects", **keywords):
+        """Create a OpenSearch API query string."""
+
+        # OpenSearch :
+        # "https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/search.json?cloudCover=[0,10]&startDate=2022-06-11T00:00:00Z&completionDate=2022-06-22T23:59:59Z&maxRecords=10"
+        # https://catalogue.dataspace.copernicus.eu/resto/api/collections/search.json?cloudCover=[0,10]&startDate=2022-06-11T00:00:00Z&completionDate=2022-06-22T23:59:59Z&maxRecords=10
+
+        # OData
+        # https://catalogue.dataspace.copernicus.eu/odata/v1/Products?$filter=Collection/Name eq 'CCM' and OData.CSC.Intersects(area=geography'SRID=4326;POLYGON((12.655118166047592 47.44667197521409,21.39065656328509 48.347694733853245,28.334291357162826 41.877123516783655,17.47086198383573 40.35854475076158,12.655118166047592 47.44667197521409))') and ContentDate/Start gt 2021-05-20T00:00:00.000Z and ContentDate/Start lt 2021-07-21T00:00:00.000Z
+
+
+
+        if Options is None :
+            Options = []
+        elif isinstance(Options, str):
+            Options = [Options]
+        elif isinstance(Options, list):
+            Options = Options
+        else:
+            raise ValueError("Options must be a string or a list of strings.")
+
+        Options.append("Collection/Name eq '{}'".format(collection.upper()))
+
+        Options.extend(self._format_date(date))
+        # Options.extend(self._format_orderby(order_by))
+
+        if area_relation.lower() not in {"intersects", "contains", "iswithin"}:
+            raise ValueError("Incorrect AOI relation provided ({})".format(area_relation))
+
+        if area is not None and area_relation.lower() in {"intersects", "contains", "iswithin"}:
+            Options.append("OData.CSC.Intersects(area=geography'SRID=4326;{footprint}')".format(footprint=area))
+
+        converters = {
+            'string' : str,
+            "date": _parse_iso_date,
+            "int": int,
+            "integer": int,
+            "long": int,
+            "float": float,
+            "double": float
+        }
+
+        # Keep the string type by default
+        def default_converter(x):
+            return x
+
+        attributes = self._get_attributes_info(collection.upper())
+        for attr, value in sorted(keywords.items()) :
+            if value is None :
+                continue
+
+            if attr not in attributes[collection.upper()] :
+                continue
+
+            key = attributes[collection.upper()][attr]
+            if key.lower() not in converters:
+                print('类型不支持【%s】' %(attributes[collection.upper()][attr]))
+                continue
+
+
+            if key.lower() == 'string' :
+                Options.append("Attributes/OData.CSC.StringAttribute/any(att:att/Name eq '{Name}' and " \
+                               "att/OData.CSC.StringAttribute/Value eq '{Value}')".format(Name=attr, Value=value))
+
+            else:
+                f = converters.get(key.lower(), default_converter)
+                if isinstance(value, list) or isinstance(value, tuple):
+                    Options.append("Attributes/OData.CSC.{key}Attribute/any(att:att/Name eq '{Name}' " \
+                                   "and att/OData.CSC.{key}Attribute/Value ge {Value})".format(key=key, Name=attr,
+                                                                                                Value=f(value[0])))
+                    Options.append("Attributes/OData.CSC.{key}Attribute/any(att:att/Name eq '{Name}' " \
+                                   "and att/OData.CSC.{key}Attribute/Value le {Value})".format(key=key, Name=attr,
+                                                                                                Value=f(value[1])))
+                else:
+                    Options.append("Attributes/OData.CSC.{key}Attribute/any(att:att/Name eq '{Name}' and " \
+                                   "att/OData.CSC.{key}Attribute/Value le {Value})".format(key=key, Name=attr, Value=f(value)))
+        #     if isinstance(value, set):
+        #         if len(value) == 0:
+        #             continue
+        #         sub_parts = []
+        #         for sub_value in value:
+        #             sub_value = _format_query_value(attr, sub_value)
+        #             if sub_value is not None:
+        #                 sub_parts.append(f"{attr}:{sub_value}")
+        #         sub_parts = sorted(sub_parts)
+        #         query_parts.append("({})".format(" OR ".join(sub_parts)))
+        #     else:
+        #         value = _format_query_value(attr, value)
+        #         if value is not None:
+        #             query_parts.append(f"{attr}:{value}")
+        #
+        # if Options is not None:
+        #     query_parts.append(Options)
+        #
+        # if area is not None:
+        #     query_parts.append('footprint:"{}({})"'.format(area_relation, area))
+
+        return ' and '.join(Options)
+
+    def _get_attributes_info(self, collection=None):
+        '''
+        Attributes :
+        https://catalogue.dataspace.copernicus.eu/odata/v1/Attributes
+        https://catalogue.dataspace.copernicus.eu/odata/v1/Attributes(SENTINEL-1)
+        Attributes/OData.CSC.StringAttribute/any(att:att/Name eq ‘[Attribute.Name]’ and att/OData.CSC.StringAttribute/Value eq ‘[Attribute.Value]’)
+        [Attribute.Name] is the attribute name which can take multiple values depending on collection; acceptable values for the attribute name can be checked at the specified endpoints for each collection, as provided in List of OData query attributes.
+        eq before [Attribute.Value] can be substituted with le, lt, ge, gt in case of Integer, Double or DateTimeOffset Attributes
+        [Attribute.Value] is the specific value that the user is searching for
+        '''
+
+        if collection is not None:
+            attr_url = URL_SEARCH + 'odata/v1/Attributes({collection})'.format(collection=collection.upper())
+        else:
+            attr_url = URL_SEARCH + 'odata/v1/Attributes'
+
+        resp = self.session.get(attr_url)
+
+        self._check_scihub_response(resp)
+        data = resp.json()
+
+        attrs = {}
+        if isinstance(data, dict) :
+            for collection in data :
+                attrs[collection.upper()] = {}
+                for item in data[collection] :
+                    attrs[collection.upper()][item['Name']] = item['ValueType']
+        elif isinstance(data, list):
+
+            attrs[collection.upper()] = {}
+            for item in data :
+                attrs[collection.upper()][item['Name']] = item['ValueType']
+
+        return attrs
+
+    def _format_date(self, date):
+        if date is None:
+            return []
+        elif isinstance(date, list) or isinstance(date, tuple):
+            return [
+                "ContentDate/Start ge %s" %(date[0].strftime('%Y-%m-%dT%H:%M:%S.%fZ')),
+                "ContentDate/End lt %s"   %(date[1].strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+            ]
+        elif isinstance(date, datetime):
+            return [
+                "ContentDate/Start ge %s" %(date.strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+            ]
+        else:
+            raise Exception('【date】仅支持 list or tuple or datetime')
+
+    def _format_orderby(self, orderby):
+        # orderby:
+        # ContentDate/Start, ContentDate/End, PublicationDate, ModificationDate, in directions: asc, desc.
+        if orderby is None:
+            return []
+        elif orderby in ['ContentDate/Start, ContentDate/End, PublicationDate, ModificationDate'] :
+            return [orderby]
+        else:
+            return []
 
     @property
     def concurrent_dl_limit(self):
@@ -181,154 +470,6 @@ class SentinelAPI:
             self._dhus_version = self._req_dhus_stub()
         return self._dhus_version
 
-    def query(
-        self,
-        area=None,
-        date=None,
-        raw=None,
-        area_relation="Intersects",
-        order_by=None,
-        limit=None,
-        offset=0,
-        **keywords
-    ):
-        """Query the OpenSearch API with the coordinates of an area, a date interval
-        and any other search keywords accepted by the API.
-
-        Parameters
-        ----------
-        area : str, optional
-            The area of interest formatted as a Well-Known Text string.
-        date : tuple of (str or datetime) or str, optional
-            A time interval filter based on the Sensing Start Time of the products.
-            Expects a tuple of (start, end), e.g. ("NOW-1DAY", "NOW").
-            The timestamps can be either a Python datetime or a string in one of the
-            following formats:
-
-                - yyyyMMdd
-                - yyyy-MM-ddThh:mm:ss.SSSZ (ISO-8601)
-                - yyyy-MM-ddThh:mm:ssZ
-                - NOW
-                - NOW-<n>DAY(S) (or HOUR(S), MONTH(S), etc.)
-                - NOW+<n>DAY(S)
-                - yyyy-MM-ddThh:mm:ssZ-<n>DAY(S)
-                - NOW/DAY (or HOUR, MONTH etc.) - rounds the value to the given unit
-
-            Alternatively, an already fully formatted string such as "[NOW-1DAY TO NOW]" can be
-            used as well.
-        raw : str, optional
-            Additional query text that will be appended to the query.
-        area_relation : {'Intersects', 'Contains', 'IsWithin'}, optional
-            What relation to use for testing the AOI. Case insensitive.
-
-                - Intersects: true if the AOI and the footprint intersect (default)
-                - Contains: true if the AOI is inside the footprint
-                - IsWithin: true if the footprint is inside the AOI
-
-        order_by: str, optional
-            A comma-separated list of fields to order by (on server side).
-            Prefix the field name by '+' or '-' to sort in ascending or descending order,
-            respectively. Ascending order is used if prefix is omitted.
-            Example: "cloudcoverpercentage, -beginposition".
-        limit: int, optional
-            Maximum number of products returned. Defaults to no limit.
-        offset: int, optional
-            The number of results to skip. Defaults to 0.
-        **keywords
-            Additional keywords can be used to specify other query parameters,
-            e.g. `relativeorbitnumber=70`.
-            See https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/3FullTextSearch
-            for a full list.
-
-
-        Range values can be passed as two-element tuples, e.g. `cloudcoverpercentage=(0, 30)`.
-        `None` can be used in range values for one-sided ranges, e.g. `orbitnumber=(16302, None)`.
-        Ranges with no bounds (`orbitnumber=(None, None)`) will not be included in the query.
-
-        Multiple values for the same query parameter can be provided as sets and will be handled as
-        logical OR, e.g. `orbitnumber={16302, 1206}`.
-
-        The time interval formats accepted by the `date` parameter can also be used with
-        any other parameters that expect time intervals (that is: 'beginposition', 'endposition',
-        'date', 'creationdate', and 'ingestiondate').
-
-        Returns
-        -------
-        dict[string, dict]
-            Products returned by the query as a dictionary with the product ID as the key and
-            the product's attributes (a dictionary) as the value.
-        """
-        query = self.format_query(area, date, raw, area_relation, **keywords)
-
-        if query.strip() == "":
-            # An empty query should return the full set of products on the server, which is a bit unreasonable.
-            # The server actually raises an error instead and it's better to fail early in the client.
-            raise ValueError("Empty query.")
-
-        # check query length - often caused by complex polygons
-        if self.check_query_length(query) > 1.0:
-            self.logger.warning(
-                "The query string is too long and will likely cause a bad DHuS response."
-            )
-
-        self.logger.debug(
-            "Running query: order_by=%s, limit=%s, offset=%s, query=%s",
-            order_by,
-            limit,
-            offset,
-            query,
-        )
-        formatted_order_by = _format_order_by(order_by)
-        response, count = self._load_query(query, formatted_order_by, limit, offset)
-        self.logger.info(f"Found {count:,} products")
-        return _parse_opensearch_response(response)
-
-    @staticmethod
-    def format_query(area=None, date=None, raw=None, area_relation="Intersects", **keywords):
-        """Create a OpenSearch API query string."""
-        if area_relation.lower() not in {"intersects", "contains", "iswithin"}:
-            raise ValueError("Incorrect AOI relation provided ({})".format(area_relation))
-
-        # Check for duplicate keywords
-        kw_lower = {x.lower() for x in keywords}
-        if (
-            len(kw_lower) != len(keywords)
-            or (date is not None and "beginposition" in kw_lower)
-            or (area is not None and "footprint" in kw_lower)
-        ):
-            raise ValueError(
-                "Query contains duplicate keywords. Note that query keywords are case-insensitive."
-            )
-
-        query_parts = []
-
-        if date is not None:
-            keywords["beginPosition"] = date
-
-        for attr, value in sorted(keywords.items()):
-            if isinstance(value, set):
-                if len(value) == 0:
-                    continue
-                sub_parts = []
-                for sub_value in value:
-                    sub_value = _format_query_value(attr, sub_value)
-                    if sub_value is not None:
-                        sub_parts.append(f"{attr}:{sub_value}")
-                sub_parts = sorted(sub_parts)
-                query_parts.append("({})".format(" OR ".join(sub_parts)))
-            else:
-                value = _format_query_value(attr, value)
-                if value is not None:
-                    query_parts.append(f"{attr}:{value}")
-
-        if raw:
-            query_parts.append(raw)
-
-        if area is not None:
-            query_parts.append('footprint:"{}({})"'.format(area_relation, area))
-
-        return " ".join(query_parts)
-
     def count(self, area=None, date=None, raw=None, area_relation="Intersects", **keywords):
         """Get the number of products matching a query.
 
@@ -351,28 +492,28 @@ class SentinelAPI:
         _, total_count = self._load_query(query, limit=0)
         return total_count
 
-    def _load_query(self, query, order_by=None, limit=None, offset=0):
+    def _load_query(self, query, order_by=None, limit=1000, offset=0):
         products, count = self._load_subquery(query, order_by, limit, offset)
-
+        print('产品个数：%d' %(count))
         # repeat query until all results have been loaded
-        max_offset = count
-        if limit is not None:
-            max_offset = min(count, offset + limit)
-        if max_offset > offset + self.page_size:
-            progress = self._tqdm(
-                desc="正在查询产品",
-                initial=self.page_size,
-                total=max_offset - offset,
-                unit="个",
-            )
-            for new_offset in range(offset + self.page_size, max_offset, self.page_size):
-                new_limit = limit
-                if limit is not None:
-                    new_limit = limit - new_offset + offset
-                ret = self._load_subquery(query, order_by, new_limit, new_offset)[0]
-                progress.update(len(ret))
-                products += ret
-            progress.close()
+        # max_offset = count
+        # if limit is not None:
+        #     max_offset = min(count, offset + limit)
+        # if max_offset > offset + self.page_size:
+        #     progress = self._tqdm(
+        #         desc="正在查询产品",
+        #         initial=self.page_size,
+        #         total=max_offset - offset,
+        #         unit="个",
+        #     )
+        #     for new_offset in range(offset + self.page_size, max_offset, self.page_size):
+        #         new_limit = limit
+        #         if limit is not None:
+        #             new_limit = limit - new_offset + offset
+        #         ret = self._load_subquery(query, order_by, new_limit, new_offset)[0]
+        #         progress.update(len(ret))
+        #         products += ret
+        #     progress.close()
 
         return products, count
 
@@ -382,10 +523,12 @@ class SentinelAPI:
         self.logger.debug("Sub-query: offset=%s, limit=%s", offset, limit)
 
         # load query results
-        url = self._format_url(order_by, limit, offset)
+        url = self._format_url(query, order_by, limit, offset)
+
         # Unlike POST, DHuS only accepts latin1 charset in the GET params
         with self.dl_limit_semaphore:
-            response = self.session.get(url, params={"q": query.encode("latin1")})
+            # response = self.session.get(url, params={"q": query.encode("latin1")})
+            response = self.session.get(url)
         self._check_scihub_response(response, query_string=query)
 
         # store last status code (for testing)
@@ -393,32 +536,38 @@ class SentinelAPI:
 
         # parse response content
         try:
-            json_feed = response.json()["feed"]
+            json_feed = response.json()["value"]
             if "error" in json_feed:
                 message = json_feed["error"]["message"]
                 message = message.replace("org.apache.solr.search.SyntaxError: ", "")
                 raise QuerySyntaxError(message, response)
-            total_results = int(json_feed["opensearch:totalResults"])
+            # total_results = int(json_feed["opensearch:totalResults"])
         except (ValueError, KeyError):
             raise ServerError("API response not valid. JSON decoding failed.", response)
 
-        products = json_feed.get("entry", [])
+        products = json_feed
         # this verification is necessary because if the query returns only
         # one product, self.products will be a dict not a list
         if isinstance(products, dict):
             products = [products]
+        total_results = len(products)
+
+        products = _parse_odata_response(products)
+
 
         return products, total_results
 
-    def _format_url(self, order_by=None, limit=None, offset=0):
-        if limit is None:
-            limit = self.page_size
-        limit = min(limit, self.page_size)
-        url = "search?format=json&rows={}".format(limit)
-        url += "&start={}".format(offset)
-        if order_by:
-            url += "&orderby={}".format(order_by)
-        return urljoin(self.api_url, url)
+    def _format_url(self, query, order_by=None, limit=1000, offset=0):  # TODO 根据最新版本更新API
+        # if limit is None:
+        #     limit = self.page_size
+        # limit = min(limit, self.page_size)
+        url = "&$top={}".format(limit)
+        url += "&$skip={}".format(offset)
+        # url += "&start={}".format(offset)
+        if order_by :
+            url += "&$orderby=ContentDate/Start desc"
+
+        return URL_SEARCH + f"odata/v1/Products?$filter=" + query + url
 
     @staticmethod
     def to_geojson(products):
@@ -503,19 +652,22 @@ class SentinelAPI:
         https://github.com/SentinelDataHub/DataHubSystem/blob/master/addon/sentinel-2/src/main/resources/META-INF/sentinel-2.owl
         https://github.com/SentinelDataHub/DataHubSystem/blob/master/addon/sentinel-3/src/main/resources/META-INF/sentinel-3.owl
         """
-        url = self._get_odata_url(id, "?$format=json")
+        # 'https://catalogue.dataspace.copernicus.eu/odata/v1/Products(db0c8ef3-8ec0-5185-a537-812dad3c58f8)/$value'
+        # url = self._get_odata_url(id, "?$format=json")
+        url = self._get_nodes_url(id)
         if full:
             url += "&$expand=Attributes"
         with self.dl_limit_semaphore:
             response = self.session.get(url)
         self._check_scihub_response(response)
-        values = _parse_odata_response(response.json()["d"])
+        values = _parse_odata_response(response.json())
         if values["title"].startswith("S3"):
             values["manifest_name"] = "xfdumanifest.xml"
             values["product_root_dir"] = values["title"] + ".SEN3"
         else:
             values["manifest_name"] = "manifest.safe"
-            values["product_root_dir"] = values["title"] + ".SAFE"
+            # values["product_root_dir"] = values["title"] + ".SAFE"
+        values["url"] = self._get_download_url(id)
         values["quicklook_url"] = self._get_odata_url(id, "/Products('Quicklook')/$value")
         return values
 
@@ -553,7 +705,7 @@ class SentinelAPI:
             raise
         return r.json()
 
-    def download(self, id, directory_path=".", checksum=True, nodefilter=None):
+    def download(self, product_info, directory_path=".", checksum=True, nodefilter=None, skip_download=False):
         """Download a product.
 
         Uses the filename on the server for the downloaded file, e.g.
@@ -563,7 +715,7 @@ class SentinelAPI:
 
         Parameters
         ----------
-        id : string
+        product_info : string
             UUID of the product, e.g. 'a8dd0cfd-613e-45ce-868c-d79177b916ed'
         directory_path : string, optional
             Where the file will be downloaded
@@ -593,9 +745,13 @@ class SentinelAPI:
         downloader = copy(self.downloader)
         downloader.node_filter = nodefilter
         downloader.verify_checksum = checksum
-        return downloader.download(id, directory_path)
+        downloader.token = self.token
+        return downloader.download(product_info, directory_path, skip_download=skip_download)
 
     def _get_filename(self, product_info):
+
+        return product_info['Name'] + '.zip'
+
         if product_info["Online"]:
             with self.dl_limit_semaphore:
                 req = self.session.head(product_info["url"])
@@ -645,15 +801,15 @@ class SentinelAPI:
         return self.downloader.trigger_offline_retrieval(uuid)
 
     def download_all(
-        self,
-        products,
-        directory_path=".",
-        max_attempts=10,
-        checksum=True,
-        n_concurrent_dl=None,
-        lta_retry_delay=None,
-        fail_fast=False,
-        nodefilter=None,
+            self,
+            products,
+            directory_path=".",
+            max_attempts=10,
+            checksum=True,
+            n_concurrent_dl=None,
+            lta_retry_delay=None,
+            fail_fast=False,
+            nodefilter=None,
     ):
         """Download a list of products.
 
@@ -938,7 +1094,7 @@ class SentinelAPI:
             is_fine = False
             for product_info in product_infos[name]:
                 if path.stat().st_size == product_info["size"] and self._checksum_compare(
-                    path, product_info
+                        path, product_info
                 ):
                     is_fine = True
                     break
@@ -963,11 +1119,11 @@ class SentinelAPI:
         file_path = Path(file_path)
         file_size = file_path.stat().st_size
         with self._tqdm(
-            desc=f"{algo.name.upper()} checksumming",
-            total=file_size,
-            unit="B",
-            unit_scale=True,
-            leave=False,
+                desc=f"{algo.name.upper()} checksumming",
+                total=file_size,
+                unit="B",
+                unit_scale=True,
+                leave=False,
         ) as progress:
             with open(file_path, "rb") as f:
                 while True:
@@ -1008,10 +1164,15 @@ class SentinelAPI:
         return self.downloader.get_stream(id, **kwargs)
 
     def _get_odata_url(self, uuid, suffix=""):
-        return self.api_url + f"odata/v1/Products('{uuid}')" + suffix
+        return URL_SEARCH + f"odata/v1/Products({uuid})" + suffix
+
+    def _get_nodes_url(self, uuid):
+        return URL_DOWNLOAD + f"odata/v1/Products({uuid})" + "/Nodes"
 
     def _get_download_url(self, uuid):
-        return self._get_odata_url(uuid, "/$value")
+        # return URL_DOWNLOAD + f"odata/v1/Products({uuid})" + "/$zip"
+        return URL_DOWNLOAD + f"odata/v1/Products({uuid})" + "/$value"
+
 
     @staticmethod
     def _check_scihub_response(response, test_json=True, query_string=None):
@@ -1047,8 +1208,8 @@ class SentinelAPI:
                 if "apihub.copernicus.eu/apihub" in response.url:
                     msg += (
                         ". Note that account creation and password changes may take up to a week "
-                        "to propagate to the 'https://apihub.copernicus.eu/apihub/' API URL you are using. "
-                        "Consider switching to 'https://scihub.copernicus.eu/dhus/' instead in the mean time."
+                        "to propagate to the 'https://documentation.dataspace.copernicus.eu/' API URL you are using. "
+                        "Consider switching to 'https://dataspace.copernicus.eu/' instead in the mean time."
                     )
                 raise UnauthorizedError(msg, response)
             elif "Request Entity Too Large" in msg or "Request-URI Too Long" in msg:
@@ -1182,7 +1343,6 @@ def geojson_to_wkt(geojson_obj, decimals=4):
     wkt = re.sub(r"(?<!\d) ", "", wkt)
     return wkt
 
-
 def _format_query_value(attr, value):
     """Format the value of a Solr query parameter."""
 
@@ -1194,12 +1354,12 @@ def _format_query_value(attr, value):
         # Handle strings surrounded by brackets specially to allow the user to make use of Solr syntax directly.
         # The string must not be quoted for that to work.
         if (
-            not any(
-                value.startswith(s[0]) and value.endswith(s[1])
-                for s in ["[]", "{}", "//", "()", '""']
-            )
-            and "*" not in value
-            and "?" not in value
+                not any(
+                    value.startswith(s[0]) and value.endswith(s[1])
+                    for s in ["[]", "{}", "//", "()", '""']
+                )
+                and "*" not in value
+                and "?" not in value
         ):
             value = re.sub(r"\s", " ", value, re.M)
             value = f'"{value}"'
@@ -1245,7 +1405,6 @@ def _format_query_value(attr, value):
                 f"Invalid number of elements in list. Expected 2, received {len(value)}"
             )
     return value
-
 
 def format_query_date(in_date):
     r"""
@@ -1300,7 +1459,6 @@ def format_query_date(in_date):
     except ValueError:
         raise ValueError("Unsupported date value {}".format(in_date))
 
-
 def _format_order_by(order_by):
     if not order_by or not order_by.strip():
         return None
@@ -1317,7 +1475,6 @@ def _format_order_by(order_by):
             raise ValueError("Invalid order by value ({})".format(order_by))
         output.append(part + dir)
     return ",".join(output)
-
 
 def _parse_gml_footprint(geometry_str):
     # workaround for https://github.com/sentinelsat/sentinelsat/issues/286
@@ -1366,18 +1523,22 @@ def _parse_opensearch_response(products):
     output = OrderedDict()
     for prod in products:
         product_dict = {}
-        prod_id = prod["id"]
+        prod_id = prod["Id"]
         output[prod_id] = product_dict
         for key in prod:
-            if key == "id":
-                continue
+            # if key == "Id":
+            #     continue
+            product_dict[key] = prod[key]
+
+            continue
+
             if isinstance(prod[key], str):
                 product_dict[key] = prod[key]
             else:
                 properties = prod[key]
                 if isinstance(properties, dict):
                     properties = [properties]
-                if key == "link":
+                if key == "links":
                     for p in properties:
                         name = "link"
                         if "rel" in p:
@@ -1386,40 +1547,69 @@ def _parse_opensearch_response(products):
                 else:
                     f = converters.get(key, default_converter)
                     for p in properties:
+                        if 'Name' not in p :
+                            continue
                         try:
-                            product_dict[p["name"]] = f(p["content"])
+                            product_dict["name"] = f(p["Name"])
                         except KeyError:
                             # Sentinel-3 has one element 'arr'
                             # which violates the name:content convention
-                            product_dict[p["name"]] = f(p["str"])
+                            product_dict["name"] = f(p["Name"])
     return output
 
 
-def _parse_odata_response(product):
-    output = {
-        "id": product["Id"],
-        "title": product["Name"],
-        "size": int(product["ContentLength"]),
-        product["Checksum"]["Algorithm"].lower(): product["Checksum"]["Value"],
-        "date": _parse_odata_timestamp(product["ContentDate"]["Start"]),
-        "footprint": _parse_gml_footprint(product["ContentGeometry"]),
-        "url": product["__metadata"]["media_src"],
-        "Online": product.get("Online", True),
-        "Creation Date": _parse_odata_timestamp(product["CreationDate"]),
-        "Ingestion Date": _parse_odata_timestamp(product["IngestionDate"]),
-    }
-    # Parse the extended metadata, if provided
-    converters = [int, float, _parse_iso_date]
-    for attr in product["Attributes"].get("results", []):
-        value = attr["Value"]
-        for f in converters:
-            try:
-                value = f(attr["Value"])
-                break
-            except ValueError:
-                pass
-        output[attr["Name"]] = value
-    return output
+def _parse_odata_response(products):
+
+    outputs = []
+    for product in products:
+        # self._get_download_url(id)
+        # output = {
+        #     "id": product["Id"],
+        #     "title": product["Name"],
+        #     "size": int(product["ContentLength"]),
+        #     # product["Checksum"]["Algorithm"].lower(): product["Checksum"]["Value"],
+        #     # "date": _parse_odata_timestamp(product["ContentDate"]["Start"]),
+        #     # "footprint": _parse_gml_footprint(product["ContentGeometry"]),
+        #     # "url": product["__metadata"]["media_src"],
+        #     # "Online": product.get("Online", True),
+        #     # "Creation Date": _parse_odata_timestamp(product["CreationDate"]),
+        #     # "Ingestion Date": _parse_odata_timestamp(product["IngestionDate"]),
+        # }
+
+        output = {
+            "Id": product["Id"],
+            "title": product["Name"],
+            "Name": product["Name"],
+            "size": int(product["ContentLength"]),
+
+            "date": _parse_iso_date(product["ContentDate"]["Start"]),
+            # "footprint": _parse_gml_footprint(product["ContentGeometry"]),
+            # "footprint": _parse_gml_footprint(product["Footprint"]),
+            # "url": product["__metadata"]["media_src"],
+            "Online": product.get("Online", True),
+            # "Creation Date": _parse_iso_date(product["CreationDate"]),
+            # "Ingestion Date": _parse_iso_date(product["IngestionDate"]),
+        }
+        for item in product["Checksum"] :
+            if not 'Algorithm' in item :
+                continue
+            output[item["Algorithm"].lower()] = item["Value"],
+
+
+        # Parse the extended metadata, if provided
+        # converters = [int, float, _parse_iso_date]
+        # for attr in product["Attributes"].get("results", []):
+        #     value = attr["Value"]
+        #     for f in converters:
+        #         try:
+        #             value = f(attr["Value"])
+        #             break
+        #         except ValueError:
+        #             pass
+        #     output[attr["Name"]] = value
+
+        outputs.append(output)
+    return outputs
 
 
 def placename_to_wkt(place_name):

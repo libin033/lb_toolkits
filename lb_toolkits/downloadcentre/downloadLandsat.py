@@ -16,11 +16,18 @@
 import os
 import datetime
 
-from lb_toolkits.utils.api import API
-from lb_toolkits.utils.earthexplorer import EarthExplorer, DATA_PRODUCTS
+from lb_toolkits.utils.landsat import API
+from lb_toolkits.utils.landsat import EarthExplorer, DATA_PRODUCTS
 from .cmr import cmr
 
 class downloadLandsat(cmr):
+
+    landsat_tm_c2_l1 = 'landsat_tm_c2_l1'       # Landsat 5 TM Collection 2 Level 1
+    landsat_tm_c2_l2 = 'landsat_tm_c2_l2'       # Landsat 5 TM Collection 2 Level 2
+    landsat_etm_c2_l1 = 'landsat_etm_c2_l1'     # Landsat 7 ETM+ Collection 2 Level 1
+    landsat_etm_c2_l2 = 'landsat_etm_c2_l2'     # Landsat 7 ETM+ Collection 2 Level 2
+    landsat_ot_c2_l1 = 'landsat_ot_c2_l1'       # Landsat 8/9 Collection 2 Level 1
+    landsat_ot_c2_l2 = 'landsat_ot_c2_l2'       # Landsat 8/9 Collection 2 Level 2
 
     def __init__(self, username, password):
         self.username = username

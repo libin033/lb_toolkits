@@ -6,9 +6,9 @@ import shutil
 import requests
 from tqdm import tqdm
 
-from lb_toolkits.utils.api import API
-from lb_toolkits.utils.errors import EarthExplorerError
-from lb_toolkits.utils.util import guess_dataset, is_display_id
+from lb_toolkits.utils.landsat import API
+from lb_toolkits.utils.landsat import EarthExplorerError
+from lb_toolkits.utils.landsat import guess_dataset, is_display_id
 
 
 EE_URL = "https://earthexplorer.usgs.gov/"

@@ -191,8 +191,8 @@ class cmr() :
                 urls += url_scroll_results
 
             return urls
-        except KeyboardInterrupt:
-            quit()
+        except BaseException :
+            return urls
 
     def get_credentials(self, username, password):
         """Get user credentials from .netrc or prompt for input."""
@@ -354,12 +354,16 @@ class cmr() :
     def spidertable(self, url, **kwargs):
         import pandas as pd
 
-        df1 = pd.read_html(url, **kwargs)
-        df = df1[0]
+        try:
+            df1 = pd.read_html(url, **kwargs)
+            df = df1[0]
 
-        data = df.to_dict(orient='list')
+            data = df.to_dict(orient='list')
 
-        return data
+            return data
+        except BaseException as e :
+            print(e)
+            return None
 
     def cmr_check_provider(self, shortname, provider=None, version=None):
 
@@ -367,6 +371,9 @@ class cmr() :
 
         # 第一次查询：从静态JSON文件中
         Dict_Site_Info = self.spidertable(url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
+        if Dict_Site_Info is None :
+            return False
+
         CMR_Provider = Dict_Site_Info['Provider Name']
         for prodid in CMR_Provider :
             if provider is not None :
@@ -419,6 +426,9 @@ class cmr() :
         for prodid in CMR_Provider :
             dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
                                          'collections/directory/{url}/gov.nasa.eosdis'.format(url=prodid))
+            if dict_data is None :
+                continue
+
             if not shortname in dict_data['Short Name'] :
                 continue
 
@@ -472,6 +482,9 @@ class cmr() :
         # 第一次查询：从静态JSON文件中
         Dict_Site_Info = self.spidertable(
             url = r'https://cmr.earthdata.nasa.gov/search/site/collections/directory/eosdis')
+        if Dict_Site_Info is None :
+            return {}
+
         CMR_Provider = Dict_Site_Info['Provider Name']
         for prodid in CMR_Provider :
 
@@ -510,6 +523,8 @@ class cmr() :
         for prodid in CMR_Provider :
             dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
                                          'collections/directory/{url}/gov.nasa.eosdis'.format(url=prodid))
+            if dict_data is None :
+                return {}
 
             for item in dict_data['Short Name'] :
                 matchflag = False
@@ -555,6 +570,9 @@ class cmr() :
             dict_data = self.spidertable(r'https://cmr.earthdata.nasa.gov/search/site/'
                                          'collections/directory/{url}/gov.nasa.eosdis'.format(url=provider),
                                          converters={'Version':str})
+            if dict_data is None :
+                return None
+
             dirname = os.path.dirname(CMR_Provider_Json)
             if not os.path.isdir(dirname) :
                 os.makedirs(dirname)

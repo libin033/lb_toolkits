@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict
 from xml.etree import ElementTree as etree
 
-from lb_toolkits.utils.exceptions import (
+from lb_toolkits.utils.sentinel import (
     InvalidChecksumError,
     LTAError,
     LTATriggered,
@@ -74,19 +74,20 @@ class Downloader:
     """
 
     def __init__(
-        self,
-        api,
-        *,
-        node_filter=None,
-        verify_checksum=True,
-        fail_fast=False,
-        n_concurrent_dl=None,
-        max_attempts=10,
-        dl_retry_delay=10,
-        lta_retry_delay=60,
-        lta_timeout=None
+            self,
+            api,
+            *,
+            node_filter=None,
+            verify_checksum=True,
+            fail_fast=False,
+            n_concurrent_dl=None,
+            max_attempts=10,
+            dl_retry_delay=10,
+            lta_retry_delay=60,
+            lta_timeout=None,
+            token=None
     ):
-        from lb_toolkits.utils import SentinelAPI
+        from lb_toolkits.utils.sentinel import SentinelAPI
 
         self.api: SentinelAPI = api
         self.logger = self.api.logger
@@ -101,13 +102,14 @@ class Downloader:
         self.lta_retry_delay = lta_retry_delay
         self.lta_timeout = lta_timeout
         self.chunk_size = 2**20  # download in 1 MB chunks by default
+        self.token = token
 
-    def download(self, id, directory=".", *, stop_event=None):
+    def download(self, product_info, directory=".", *, stop_event=None, skip_download=False):
         """Download a product.
 
         Parameters
         ----------
-        id : string
+        product_info : string
             UUID of the product, e.g. 'a8dd0cfd-613e-45ce-868c-d79177b916ed'
         directory : string or Path, optional
             Where the file will be downloaded
@@ -129,25 +131,34 @@ class Downloader:
         LTAError
             If the product has been archived and its retrieval failed.
         """
+
+        id = product_info['Id']
         if self.node_filter:
             return self._download_with_node_filter(id, directory, stop_event)
 
-        product_info = self.api.get_product_odata(id)
+        # product_info = self.api.get_product_odata(product_info)
+
+        product_info["url"] = self.api._get_download_url(id)
+
         filename = self.api._get_filename(product_info)
         path = Path(directory) / filename
         product_info["path"] = str(path)
         product_info["downloaded_bytes"] = 0
+
+        if skip_download :
+            print('跳过下载【%s】' %(product_info["path"]))
+            return product_info
 
         if path.exists():
             # We assume that the product has been downloaded and is complete
             return product_info
 
         # An incomplete download triggers the retrieval from the LTA if the product is not online
-        if not self.api.is_online(id):
-            self.trigger_offline_retrieval(id)
-            raise LTATriggered(id)
+        # if not self.api.is_online(id):
+        #     self.trigger_offline_retrieval(id)
+        #     raise LTATriggered(id)
 
-        self._download_common(product_info, path, stop_event)
+        self._download_common(product_info, path, stop_event, skip_download=skip_download)
         return product_info
 
     def _download_with_node_filter(self, id, directory, stop_event):
@@ -180,10 +191,11 @@ class Downloader:
             self._download_common(node_info, path, stop_event)
         return product_info
 
-    def _download_common(self, product_info: Dict[str, Any], path: Path, stop_event):
+    def _download_common(self, product_info: Dict[str, Any], path: Path, stop_event, skip_download=False):
         # Use a temporary file for downloading
+
         temp_path = path.with_name(path.name + ".incomplete")
-        skip_download = False
+
         if temp_path.exists():
             size = temp_path.stat().st_size
             if size > product_info["size"]:
@@ -211,7 +223,8 @@ class Downloader:
                 self.logger.info(
                     "Download will resume from existing incomplete file %s.", temp_path
                 )
-                pass
+                temp_path.unlink()
+
         if not skip_download:
             # Store the number of downloaded bytes for unit tests
             temp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -388,7 +401,7 @@ class Downloader:
         exceptions = {}
         # Get online status and product info.
         for pid in self._tqdm(
-            iterable=product_ids, desc="Fetching archival status", unit="product", delay=2
+                iterable=product_ids, desc="Fetching archival status", unit="product", delay=2
         ):
             assert isinstance(pid, str)
             try:
@@ -681,9 +694,9 @@ class Downloader:
 
         # Wait for the triggering and retrieval to complete first
         while (
-            statuses[uuid] != DownloadStatus.ONLINE
-            and uuid not in exceptions
-            and not stop_event.is_set()
+                statuses[uuid] != DownloadStatus.ONLINE
+                and uuid not in exceptions
+                and not stop_event.is_set()
         ):
             _wait(stop_event, 1)
         if uuid in exceptions:
@@ -721,23 +734,26 @@ class Downloader:
         raise last_exception
 
     def _download(self, url, path, file_size, title, stop_event):
-        headers = {}
+
+        headers = {"Authorization": f"Bearer %s" %(self.token)}
         continuing = path.exists()
         if continuing:
             already_downloaded_bytes = path.stat().st_size
-            headers = {"Range": "bytes={}-".format(already_downloaded_bytes)}
+            headers["Range"] = "bytes={}-{}".format(already_downloaded_bytes, file_size)
         else:
             already_downloaded_bytes = 0
         downloaded_bytes = 0
+        self.api.session.headers.update(headers)
         with self.api.dl_limit_semaphore:
             print(url)
-            r = self.api.session.get(url, stream=True, headers=headers)
+            r = self.api.session.get(url, headers=headers, stream=True)
+
         with self._tqdm(
-            desc=f"正在下载 {title}",
-            total=file_size,
-            unit="B",
-            unit_scale=True,
-            initial=already_downloaded_bytes,
+                desc=f"正在下载 {title}",
+                total=file_size,
+                unit="B",
+                unit_scale=True,
+                initial=already_downloaded_bytes,
         ) as progress, closing(r):
             self.api._check_scihub_response(r, test_json=False)
             mode = "ab" if continuing else "wb"

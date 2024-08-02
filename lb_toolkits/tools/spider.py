@@ -14,6 +14,8 @@ import os
 import shutil
 import sys
 import re
+import time
+
 import numpy as np
 import requests
 
@@ -188,9 +190,9 @@ class spiderdownload(object):
                 if r.status_code != 200 :
                     return None
 
-                nowtime = datetime.datetime.utcnow()
+                nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 with tqdm(
-                        total=file_size, unit_scale=True, unit="B", desc=f"正在下载 UTC【{nowtime}】【{basename}】",
+                        total=file_size, unit_scale=True, unit="B", desc=f"【{nowtime}】正在下载【{basename}】",
                         unit_divisor=1024, initial=already_downloaded_bytes,
                 ) as pbar:
 
@@ -201,15 +203,17 @@ class spiderdownload(object):
                                 f.write(chunk)
                                 pbar.update(len(chunk))
             print(file_size, os.path.getsize(tempfile))
+            time.sleep(0.5)
             if file_size == os.path.getsize(tempfile):
                 shutil.move(tempfile, local_filename)
                 print('成功下载【%s】' %(local_filename))
             elif file_size == -1 :
                 shutil.move(tempfile, local_filename)
                 print('成功下载【%s】' %(local_filename))
-            elif file_size <  os.path.getsize(tempfile) :
-                print('下载错误，重新下载【%s】' %(local_filename))
-                self._download(outdir, url, timeout, chunk_size=chunk_size, skip=skip, cover=cover)
+            # elif file_size <  os.path.getsize(tempfile) :
+            #     print('下载错误，重新下载【%s】' %(local_filename))
+            #     os.remove(local_filename)
+            #     self._download(outdir, url, timeout, chunk_size=chunk_size, skip=skip, cover=cover)
             else:
                 print('下载失败【%s】' %(local_filename))
         except requests.exceptions.Timeout:

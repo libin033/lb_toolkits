@@ -7,9 +7,9 @@ from io import StringIO
 
 import click
 
-from lb_toolkits.utils.api import API
-from lb_toolkits.utils.earthexplorer import EarthExplorer
-from lb_toolkits.utils.errors import LandsatxploreError
+from lb_toolkits.utils import API
+from lb_toolkits.utils import EarthExplorer
+from lb_toolkits.utils import LandsatxploreError
 
 DATASETS = [
     "landsat_tm_c1",

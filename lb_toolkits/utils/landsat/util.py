@@ -1,6 +1,6 @@
 """Utility functions."""
 
-from lb_toolkits.utils.errors import LandsatxploreError
+from lb_toolkits.utils.landsat import LandsatxploreError
 
 
 def _is_landsat_product_id(id):
