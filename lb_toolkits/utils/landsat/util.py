@@ -1,7 +1,5 @@
 """Utility functions."""
 
-from lb_toolkits.utils.landsat import LandsatxploreError
-
 
 def _is_landsat_product_id(id):
     return len(id) == 40 and id.startswith("L")
@@ -99,7 +97,7 @@ def landsat_dataset(satellite, collection="c2", level="l1"):
     elif satellite in [8, 9] and collection == "c2":
         sensor = "ot"
     else:
-        raise LandsatxploreError("Failed to guess dataset from identifier.")
+        raise Exception("Failed to guess dataset from identifier.")
     dataset = f"landsat_{sensor}_{collection}"
     if collection == "c2":
         dataset += f"_{level}"
@@ -122,7 +120,7 @@ def guess_dataset(identifier):
     elif _is_sentinel_display_id(identifier) or _is_sentinel_entity_id(identifier):
         return "sentinel_2a"
     else:
-        raise LandsatxploreError("Failed to guess dataset from identifier.")
+        raise Exception("Failed to guess dataset from identifier.")
 
 
 def title_to_snake(src_string):

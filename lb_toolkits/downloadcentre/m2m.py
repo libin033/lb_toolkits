@@ -1,5 +1,18 @@
-"""Python implementation of the Earth Explorer API."""
-
+# -*- coding:utf-8 -*-
+'''
+@Project     : lb_toolkits  
+----------------------------------------
+@File        : m2m.py  
+----------------------------------------
+@Modify Time : 2024/8/22  
+----------------------------------------
+@Author      : Lee  
+----------------------------------------
+@Desciption
+----------------------------------------
+采用M2M API进行查询、检索、下载
+ 
+'''
 import json
 from urllib.parse import urljoin
 import string
@@ -17,8 +30,8 @@ from shapely.geometry import Point, shape
 API_URL = "https://m2m.cr.usgs.gov/api/api/json/stable/"
 
 
-class API(object):
-    """EarthExplorer API."""
+class M2M(object):
+    """M2M API."""
 
     def __init__(self, username, password):
         """EarthExplorer API.
@@ -203,16 +216,16 @@ class API(object):
         return meta["display_id"]
 
     def search(
-        self,
-        dataset,
-        longitude=None,
-        latitude=None,
-        bbox=None,
-        max_cloud_cover=None,
-        start_date=None,
-        end_date=None,
-        months=None,
-        max_results=100,
+            self,
+            dataset,
+            longitude=None,
+            latitude=None,
+            bbox=None,
+            max_cloud_cover=None,
+            start_date=None,
+            end_date=None,
+            months=None,
+            max_results=100,
     ):
         """Search for scenes.
 
@@ -578,12 +591,12 @@ class SceneFilter(dict):
     """
 
     def __init__(
-        self,
-        acquisition_filter=None,
-        spatial_filter=None,
-        cloud_cover_filter=None,
-        metadata_filter=None,
-        months=None,
+            self,
+            acquisition_filter=None,
+            spatial_filter=None,
+            cloud_cover_filter=None,
+            metadata_filter=None,
+            months=None,
     ):
         if acquisition_filter:
             self["acquisitionFilter"] = acquisition_filter
@@ -595,3 +608,4 @@ class SceneFilter(dict):
             self["metadataFilter"] = metadata_filter
         if months:
             self["seasonalFilter"] = months
+
