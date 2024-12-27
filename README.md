@@ -16,33 +16,21 @@ API 参考 [官方使用说明](https://lb-toolkits.readthedocs.io/zh/latest/)
 
 ## 依赖库
 
-<table>
-    <tr>
-        <th> 库名 </th>
-        <th> 版本 </th>
-        <th> 库名 </th>
-        <th> 版本 </th>
-        <th> 库名 </th>
-        <th> 版本 </th>
-    </tr>
-    <tr>
-        <td> pillow </td>
-        <td> 7.0.0 </td>
-        <td> paramiko </td>
-        <td> 2.10.0 </td>
-        <td> cdsapi </td>
-        <td> 0.5.0 </td>
-    </tr>
-</table>
-
-
+|库名| 版本       | 
+|---|----------|   
+|pillow| \> 7.0.0 |  
+|paramiko| \>2.10.0 |  
+|cdsapi| \>0.5.0  |  
 
 ## downloadcentre
-可以对各类卫星数据下载：
-* 卫星数据：MODIS、OCO-2/3、GOSAT；
-* FTP下载：风云、葵花8；
-* spider下载: LandSat、sentinel；
-* 再分析资料：EAR5、GFS等；
+支持各类卫星数据下载： 
+
+| 气象卫星数据   | MODIS、OCO-2/3、GOSAT |
+|----------|---------------------|
+| FTP下载    | 风云、葵花8/9、海洋卫星       |
+| spider下载 | LandSat、sentinel    |
+| 再分析资料    | EAR5、GFS等           |
+
 
 
 
