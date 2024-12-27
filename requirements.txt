@@ -10,5 +10,6 @@ html2text>=2
 python-dateutil>=2.0
 certifi>=2017.4.17
 click>=7.1
+shapely
 
 
