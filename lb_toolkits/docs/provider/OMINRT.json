@@ -1,0 +1,50 @@
+{
+    "Collection": [
+        "OMI/Aura Cloud Pressure and Fraction (Raman Scattering) 1-Orbit L2 Swath 13x24 km V003 NRT",
+        "OMI/Aura Near UV Aerosol Optical Depth and Single Scattering Albedo 1-orbit L2 Swath 13x24 km V003 NRT",
+        "OMI/Aura Ozone (O3) Total Column 1-Orbit L2 Swath 13x24 km V003 NRT",
+        "OMI/Aura Ozone (O3) Total Column Daily L3 Global 0.25deg Lat/Lon Grid NRT",
+        "OMI/Aura Sulphur Dioxide (SO2) Total Column 1-orbit L2 Swath 13x24 km V003 NRT",
+        "OMPS-NPP L2 NM Aerosol Index swath orbital NRT",
+        "OMPS-NPP L2 NM Ozone (O3) Total Column swath orbital NRT",
+        "OMPS-NPP L2 NP Ozone (O3) Vertical Profile swath orbital NRT",
+        "OMPS/NPP PCA SO2 Total Column 1-Orbit L2 Swath 50x50km NRT",
+        "Ozone Monitoring Instrument Near Real Time Data for v3"
+    ],
+    "Short Name": [
+        "OMCLDRR",
+        "OMAERUV",
+        "OMTO3",
+        "OMTO3e",
+        "OMSO2",
+        "NMMIEAI-L2-NRT",
+        "NMTO3NRT",
+        "NPBUVO3-L2-NRT",
+        "NMSO2-PCA-L2-NRT",
+        "OMICOL3NRT"
+    ],
+    "Version": [
+        "003",
+        "003",
+        "003",
+        "003",
+        "003",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3"
+    ],
+    "Directory": [
+        "Browse 99 Granules",
+        "Browse 99 Granules",
+        "No Granules",
+        "Browse 2 Granules",
+        "Browse 96 Granules",
+        "Browse 114 Granules",
+        "Browse 113 Granules",
+        "Browse 113 Granules",
+        "Browse 113 Granules",
+        "No Granules"
+    ]
+}

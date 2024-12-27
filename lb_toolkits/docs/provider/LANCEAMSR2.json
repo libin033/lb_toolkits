@@ -1,0 +1,38 @@
+{
+    "Collection": [
+        "NRT AMSR2 Unified Global Swath Surface Precipitation GSFC Profiling Algorithm V2",
+        "NRT AMSR2 Unified L2B Global Swath Ocean Products V1",
+        "NRT AMSR2 Unified L2B Half-Orbit 25 km EASE-Grid Surface Soil Moisture Beta V2",
+        "NRT AMSR2 Unified L3 Daily 12.5 km Brightness Temperature & Sea Ice Concentration V4",
+        "NRT AMSR2 Unified L3 Daily 25 km Brightness Temperature & Sea Ice Concentration Polar Grids V4",
+        "NRT AMSR2 Unified L3 Daily 6.25 km Polar Gridded 89 GHz Brightness Temperatures V4",
+        "NRT AMSR2 Unified L3 Global Daily 25 km EASE-Grid Snow Water Equivalent V2"
+    ],
+    "Short Name": [
+        "AU_Rain_NRT_R02",
+        "AU_Ocean_NRT_R01",
+        "AU_Land_NRT_R02",
+        "AU_SI12_NRT_R04",
+        "AU_SI25_NRT_R04",
+        "AU_SI6_NRT_R04",
+        "AU_DySno_NRT_R02"
+    ],
+    "Version": [
+        "2",
+        "1",
+        "2",
+        "4",
+        "4",
+        "4",
+        "2"
+    ],
+    "Directory": [
+        "Browse 375 Granules",
+        "Browse 376 Granules",
+        "Browse 762 Granules",
+        "Browse 14 Granules",
+        "Browse 14 Granules",
+        "Browse 14 Granules",
+        "Browse 14 Granules"
+    ]
+}

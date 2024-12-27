@@ -1,0 +1,13 @@
+include LICENSE
+include MANIFEST.in
+include README.md
+
+recursive-include lb_toolkits __init__.py
+recursive-include lb_toolkits version.py
+recursive-include lb_toolkits/docs/provider *
+recursive-include lb_toolkits/download *
+recursive-include lb_toolkits/utils *
+recursive-include lb_toolkits/parm *.jpg
+recursive-include lb_toolkits/parm/bin/linux *
+recursive-include lb_toolkits/parm/bin/windows *
+
