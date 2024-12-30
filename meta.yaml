@@ -16,11 +16,8 @@ requirements:
 
   run:
     - numpy >=1.2.0
-    - h5py >=1.0.0
-    - netcdf4 >=1.0.0
     - tqdm >=4.0.0
     - cdsapi >=0.5.0
-    - pyshp >=2.1.0
     - paramiko >=2.10.0
 
   test:

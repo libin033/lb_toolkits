@@ -10,9 +10,8 @@
  
 '''
 
-from lb_toolkits.downloadcentre import DownloadCentre
+from . import downloadcentre
 
 from .version import get_versions
 __version__ = get_versions()['version']
 del get_versions
-

@@ -29,7 +29,7 @@ setup(
     long_description = readme,
     long_description_content_type = content_type,
     # url='', # 如果有github之类的相关链接
-    author = 'The lb_toolkits Team', # 作者
+    author = 'Nanhu Lab(南湖实验室，聂维)', # 作者
     # author_email='xxx@163.com', # 邮箱
     license = 'MIT',
     platforms = ["windows", 'linux'],
