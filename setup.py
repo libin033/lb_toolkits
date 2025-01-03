@@ -29,7 +29,7 @@ setup(
     long_description = readme,
     long_description_content_type = content_type,
     # url='', # 如果有github之类的相关链接
-    author = 'Nanhu Lab(南湖实验室，聂维)', # 作者
+    author = 'Nanhu Lab(南湖实验室，浙江.嘉兴)', # 作者
     # author_email='xxx@163.com', # 邮箱
     license = 'MIT',
     platforms = ["windows", 'linux'],
@@ -41,10 +41,9 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     url='https://github.com/libin033/lb_toolkits',
-    keywords=['FengYun', 'Meteorology', 'RemoteSensing',
-              'hdf', 'netcdf', 'spider'], # 关键词之间空格相隔一般
+    keywords=['FengYun', 'Meteorology', 'RemoteSensing', 'spider'], # 关键词之间空格相隔一般
     # 需要安装的依赖
-    namespace_packages = ['lb_toolkits'],
+    namespace_packages = [],
     install_requires = [
         'numpy >= 1.2.0',
         'tqdm >= 4.0.0',
