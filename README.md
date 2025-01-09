@@ -5,7 +5,7 @@ python -m pip install lb_toolkits
 python -m pip install --upgrade lb_toolkits
 ```
 
-API 参考 [官方使用说明](https://lb-toolkits.readthedocs.io/zh/latest/)
+API 参考 [官方使用说明](https://lb-toolkits.readthedocs.io/zh-cn/latest/)
 
 
 <div align="center"> 
