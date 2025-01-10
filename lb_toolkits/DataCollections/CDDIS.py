@@ -1,4 +1,18 @@
 # -*- coding:utf-8 -*-
+'''
+@Project     : lb_toolkits
+
+@File        :
+
+@Modify Time :  2023/5/6 16:34
+
+@Author      : Lee
+
+@Version     : 1.0
+
+@Description :
+
+'''
 
 from lb_toolkits.DataCollections.DataCollectionDefinition import DataCollectionDefinition 
 
