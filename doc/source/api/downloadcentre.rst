@@ -9,6 +9,13 @@ downloadcentre
  * 再分析资料：EAR5、GFS等
 
 
+downloadcentre(下载统一接口)
+-----------------------------------------
+.. automodule:: lb_toolkits.downloadcentre
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 downloadFY(风云系列)
 -----------------------------------------
 
