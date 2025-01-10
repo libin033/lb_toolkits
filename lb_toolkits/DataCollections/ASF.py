@@ -1231,3 +1231,5 @@ class DataCollectionASF :
             description="UAVSAR_POLSAR_STOKES version: 1"
         )
 
+    def __init__(self):
+        pass
