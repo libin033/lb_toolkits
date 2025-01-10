@@ -19,7 +19,7 @@ downloadcentre(下载统一接口)
 downloadFY(风云系列)
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadFY
+.. automodule:: lb_toolkits.download.downloadFY
     :members:
     :undoc-members:
     :show-inheritance:
@@ -28,7 +28,7 @@ downloadFY(风云系列)
 downloadH8(葵花8、9)
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadH8
+.. automodule:: lb_toolkits.download.downloadH8
     :members:
     :undoc-members:
     :show-inheritance:
@@ -36,7 +36,7 @@ downloadH8(葵花8、9)
 downloadHY（海洋卫星）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadHY
+.. automodule:: lb_toolkits.download.downloadHY
     :members:
     :undoc-members:
     :show-inheritance:
@@ -45,7 +45,7 @@ downloadHY（海洋卫星）
 downloadMODIS（AQUA、TERRA）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadMODIS
+.. automodule:: lb_toolkits.download.downloadMODIS
     :members:
     :undoc-members:
     :show-inheritance:
@@ -54,7 +54,7 @@ downloadMODIS（AQUA、TERRA）
 downloadEarthdata（Earthdata上的数据都支持）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadEarthdata
+.. automodule:: lb_toolkits.download.downloadEarthdata
     :members:
     :undoc-members:
     :show-inheritance:
@@ -63,7 +63,7 @@ downloadEarthdata（Earthdata上的数据都支持）
 downloadSentinel（哨兵1、2、3、5P）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadSentinel
+.. automodule:: lb_toolkits.download.downloadSentinel
     :members:
     :undoc-members:
     :show-inheritance:
@@ -72,7 +72,7 @@ downloadSentinel（哨兵1、2、3、5P）
 downloadLandsat（Landsat8、9）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadLandsat
+.. automodule:: lb_toolkits.download.downloadLandsat
     :members:
     :undoc-members:
     :show-inheritance:
@@ -81,7 +81,7 @@ downloadLandsat（Landsat8、9）
 downloadTANSAT
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadTANSAT
+.. automodule:: lb_toolkits.download.downloadTANSAT
     :members:
     :undoc-members:
     :show-inheritance:
@@ -90,7 +90,7 @@ downloadTANSAT
 downloadOCO（OCO-2、3）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadOCO
+.. automodule:: lb_toolkits.download.downloadOCO
     :members:
     :undoc-members:
     :show-inheritance:
@@ -99,7 +99,7 @@ downloadOCO（OCO-2、3）
 downloadGOSAT（GOSAT的 CO2、CH4、H2O）
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadGOSAT
+.. automodule:: lb_toolkits.download.downloadGOSAT
     :members:
     :undoc-members:
     :show-inheritance:
@@ -108,7 +108,7 @@ downloadGOSAT（GOSAT的 CO2、CH4、H2O）
 downloadCALIPSO
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadCALIPSO
+.. automodule:: lb_toolkits.download.downloadCALIPSO
     :members:
     :undoc-members:
     :show-inheritance:
@@ -118,7 +118,7 @@ downloadCALIPSO
 downloadERA5
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadERA5
+.. automodule:: lb_toolkits.download.downloadERA5
     :members:
     :undoc-members:
     :show-inheritance:
@@ -127,7 +127,7 @@ downloadERA5
 downloadGFS
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadGFS
+.. automodule:: lb_toolkits.download.downloadGFS
     :members:
     :undoc-members:
     :show-inheritance:
@@ -137,7 +137,7 @@ downloadGFS
 downloadTle
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadTle
+.. automodule:: lb_toolkits.download.downloadTle
     :members:
     :undoc-members:
     :show-inheritance:
@@ -145,7 +145,7 @@ downloadTle
 downloadDEM
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadDEM
+.. automodule:: lb_toolkits.download.downloadDEM
     :members:
     :undoc-members:
     :show-inheritance:
@@ -153,7 +153,7 @@ downloadDEM
 downloadLandcover
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadLandcover
+.. automodule:: lb_toolkits.download.downloadLandcover
     :members:
     :undoc-members:
     :show-inheritance:
@@ -161,7 +161,7 @@ downloadLandcover
 downloadGithub
 -----------------------------------------
 
-.. automodule:: lb_toolkits.downloadcentre.downloadGithub
+.. automodule:: lb_toolkits.download.downloadGithub
     :members:
     :undoc-members:
     :show-inheritance:
