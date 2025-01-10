@@ -1231,5 +1231,10 @@ class DataCollectionASF :
             description="UAVSAR_POLSAR_STOKES version: 1"
         )
 
-    def __init__(self):
+    def __init__(self, user=None, password=None):
         pass
+
+    def get(self, xx):
+        pass
+
+
