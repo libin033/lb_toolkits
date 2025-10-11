@@ -23,11 +23,7 @@ sphinx:
   configuration: doc/source/conf.py
 
 
-# Python 依赖安装（与 build.commands 中的 pip 安装功能一致，二选一即可）
-python:
-  install:
-    # 从 requirements.txt 安装依赖
-    - requirements: doc/source/requirements.txt
+
 
 
 # 生成的文档格式（默认仅 htmlzip，添加 pdf/epub 需确保环境支持）
