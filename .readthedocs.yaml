@@ -13,7 +13,7 @@ build:
     # 安装文档专用依赖（从 requirements 文件读取）
     - pip install -r doc/source/requirements.txt
     # 关键：将 HTML 输出到 $READTHEDOCS_OUTPUT/html
-    - sphinx-build -b html doc/source $READTHEDOCS_OUTPUT/html
+    - sphinx-build -b html doc/source/ $READTHEDOCS_OUTPUT/html
 
 # Sphinx 配置（若用 MkDocs，需替换为 mkdocs 节点）
 sphinx:
