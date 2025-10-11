@@ -29,10 +29,7 @@ python:
   install:
     # 从 requirements.txt 安装依赖
     - requirements: doc/source/requirements.txt
-    # 直接安装特定包（如 Sphinx 主题）
-    - pip:
-        - sphinx-autodoc-typehints==1.25.2
-        - myst-parser==2.0.0  # 支持 Markdown 格式文档
+
 
 # 生成的文档格式（默认仅 htmlzip，添加 pdf/epub 需确保环境支持）
 formats:
