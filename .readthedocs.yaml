@@ -15,14 +15,14 @@ build:
     # 安装文档专用依赖（从 requirements 文件读取）
     - pip install -r doc/source/requirements.txt
     # 额外执行 Sphinx 构建（若需自定义参数，如开启警告视为错误）
-    - sphinx-build -W -b html doc/source doc/source/_build/html
+    - sphinx-build -W -b html doc/ doc/_build/html
 
 # Sphinx 配置（若用 MkDocs，需替换为 mkdocs 节点）
 sphinx:
   # Sphinx 配置文件路径（docs 目录下的 conf.py）
   configuration: doc/source/conf.py
   # 文档输出目录（默认 _build，可自定义）
-  builddir: doc/source/_build
+  builddir: doc/_build
 
 # Python 依赖安装（与 build.commands 中的 pip 安装功能一致，二选一即可）
 python:
