@@ -65,7 +65,7 @@ class downloadGOSAT :
 
         ------------------------------------------------------------------------------------
         Observation period	            Input FTS L1B	Bias uncorrected    Bias corrected
-                                                        FTS SWIR L2 CO2	    FTS SWIR L2 CO2
+              ---                         ---          FTS SWIR L2 CO2	    FTS SWIR L2 CO2
         Jun. 01, 2020 - Sep. 30, 2022	V220.221	       V02.91	          V02.98
         Apr. 23, 2009 - May 31, 2020	V220.220	       V02.90	          V02.97
         Jun. 01, 2020 - Jul. 31, 2021	V220.221	       V02.91	          V02.96
