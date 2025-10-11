@@ -1,15 +1,41 @@
-# 必需字段
+# 配置文件版本（必填，当前仅支持 2）
 version: 2
-# 使用 Sphinx 构建文档
+
+# 构建环境配置
+build:
+  # 操作系统（推荐 ubuntu-22.04，兼容性更好）
+  os: ubuntu-22.04
+  # 构建工具版本（Python 版本需与项目依赖匹配）
+  tools:
+    python: "3.10"
+  # 自定义构建命令（可选，优先级高于默认命令）
+  commands:
+    # 安装项目本身（若文档依赖项目代码）
+    - pip install -e .
+    # 安装文档专用依赖（从 requirements 文件读取）
+    - pip install -r doc/source/requirements.txt
+    # 额外执行 Sphinx 构建（若需自定义参数，如开启警告视为错误）
+    - sphinx-build -W -b html doc/source doc/source/_build/html
+
+# Sphinx 配置（若用 MkDocs，需替换为 mkdocs 节点）
 sphinx:
+  # Sphinx 配置文件路径（docs 目录下的 conf.py）
   configuration: doc/source/conf.py
-  builder: dirhtml
-  fail_on_warning: true
-# 指定 Python 版本及依赖项
+  # 文档输出目录（默认 _build，可自定义）
+  builddir: doc/source/_build
+
+# Python 依赖安装（与 build.commands 中的 pip 安装功能一致，二选一即可）
 python:
-  version: 3.10
   install:
+    # 从 requirements.txt 安装依赖
     - requirements: doc/source/requirements.txt
-# 可选：生成 PDF 格式文档
+    # 直接安装特定包（如 Sphinx 主题）
+    - pip:
+        - sphinx-autodoc-typehints==1.25.2
+        - myst-parser==2.0.0  # 支持 Markdown 格式文档
+
+# 生成的文档格式（默认仅 htmlzip，添加 pdf/epub 需确保环境支持）
 formats:
+  - htmlzip
   - pdf
+  - epub
