@@ -78,7 +78,6 @@ class downloadGOSAT :
         Apr. 23, 2009 - May 31, 2020	V220.220	     V02.90	                V02.95
         Apr. 23, 2009 - Jun. 30, 2020	V210.210	     V02.81	                -
 
-
         Parameters
         ----------
         outdir
