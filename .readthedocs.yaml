@@ -21,8 +21,7 @@ build:
 sphinx:
   # Sphinx 配置文件路径（docs 目录下的 conf.py）
   configuration: doc/source/conf.py
-  # 文档输出目录（默认 _build，可自定义）
-  builddir: doc/_build
+
 
 # Python 依赖安装（与 build.commands 中的 pip 安装功能一致，二选一即可）
 python:
