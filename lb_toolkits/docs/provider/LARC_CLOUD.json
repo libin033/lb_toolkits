@@ -1,0 +1,58 @@
+{
+    "Collection": [
+        "TEMPO NO2 tropospheric, stratospheric, and total columns (UNVALIDATED)",
+        "TEMPO cloud pressure and fraction (O2-O2 dimer) (UNVALIDATED)",
+        "TEMPO dark exposure (UNVALIDATED)",
+        "TEMPO formaldehyde total column (UNVALIDATED)",
+        "TEMPO geolocated Earth radiances (UNVALIDATED)",
+        "TEMPO gridded NO2 tropospheric, stratospheric, and total columns (UNVALIDATED)",
+        "TEMPO gridded cloud fraction and pressure (O2-O2 dimer) (UNVALIDATED)",
+        "TEMPO gridded formaldehyde total column (UNVALIDATED)",
+        "TEMPO gridded ozone total column (UNVALIDATED)",
+        "TEMPO ozone total column (UNVALIDATED)",
+        "TEMPO solar irradiance (UNVALIDATED)",
+        "TEMPO solar irradiance (reference diffuser) (UNVALIDATED)"
+    ],
+    "Short Name": [
+        "TEMPO_NO2_L2",
+        "TEMPO_CLDO4_L2",
+        "TEMPO_DRK_L1",
+        "TEMPO_HCHO_L2",
+        "TEMPO_RAD_L1",
+        "TEMPO_NO2_L3",
+        "TEMPO_CLDO4_L3",
+        "TEMPO_HCHO_L3",
+        "TEMPO_O3TOT_L3",
+        "TEMPO_O3TOT_L2",
+        "TEMPO_IRR_L1",
+        "TEMPO_IRRR_L1"
+    ],
+    "Version": [
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01",
+        "V01"
+    ],
+    "Directory": [
+        "Browse 2238 Granules",
+        "Browse 2239 Granules",
+        "Browse 59 Granules",
+        "Browse 2238 Granules",
+        "Browse 2239 Granules",
+        "Browse 309 Granules",
+        "Browse 309 Granules",
+        "Browse 309 Granules",
+        "Browse 309 Granules",
+        "Browse 2239 Granules",
+        "Browse 9 Granules",
+        "Browse 2 Granules"
+    ]
+}
