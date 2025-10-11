@@ -73,7 +73,7 @@ class downloadGOSAT :
         Apr. 23, 2009 - Jun. 30, 2020	V210.210	       V02.81	          -
         ====================================================================================
         Observation period	           Input FTS L1B	Bias uncorrected     Bias corrected
-                                                         FTS SWIR L2 CH4	 FTS SWIR L2 CH4
+            ---                          ---            FTS SWIR L2 CH4	    FTS SWIR L2 CH4
         Jun. 01, 2020 - Sep. 30, 2022	V220.221	     V02.91	                V02.96
         Apr. 23, 2009 - May 31, 2020	V220.220	     V02.90	                V02.95
         Apr. 23, 2009 - Jun. 30, 2020	V210.210	     V02.81	                -

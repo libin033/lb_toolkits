@@ -53,10 +53,10 @@ downloadMODIS（AQUA、TERRA）
     :show-inheritance:
 
 
-downloadEarthdata（Earthdata上的数据都支持）
+downloadEarthCare
 -----------------------------------------
 
-.. automodule:: lb_toolkits.download.downloadEarthdata
+.. automodule:: lb_toolkits.download.downloadEarthCare
     :members:
     :undoc-members:
     :show-inheritance:
