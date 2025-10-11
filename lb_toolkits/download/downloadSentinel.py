@@ -78,7 +78,7 @@ class downloadSentinel :
         producttype: str
             - Sentinel-1: SLC, GRD, OCN, RAW
             - Sentinel-2: S2MSI2A,S2MSI1C, S2MS2Ap
-            - Sentinel-3: SR_1_SRA___, SR_1_SRA_A_, SR_1_SRA_BS,
+            - Sentinel-3: SR_1_SRA___, SR_1_SRA_A, SR_1_SRA_BS,
                           SR_2_LAN___, OL_1_EFR___, OL_1_ERR___, OL_2_LFR___,
                           OL_2_LRR___, SL_1_RBT___, SL_2_LST___, SY_2_SYN___,
                           SY_2_V10___, SY_2_VG1___, SY_2_VGP___.
