@@ -12,8 +12,7 @@ build:
   commands:
     # 安装文档专用依赖（从 requirements 文件读取）
     - pip install -r doc/source/requirements.txt
-    # 额外执行 Sphinx 构建（若需自定义参数，如开启警告视为错误）
-    - sphinx-build -W -b html doc/ doc/_build/html
+
 
 # Sphinx 配置（若用 MkDocs，需替换为 mkdocs 节点）
 sphinx:
