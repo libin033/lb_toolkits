@@ -1,4 +1,4 @@
-name: python39
+name: python310
 
 channels:
   - conda-forge
