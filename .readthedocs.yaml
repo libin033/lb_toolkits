@@ -1,0 +1,15 @@
+# 必需字段
+version: 2
+# 使用 Sphinx 构建文档
+sphinx:
+  configuration: doc/source/conf.py
+  builder: dirhtml
+  fail_on_warning: true
+# 指定 Python 版本及依赖项
+python:
+  version: 3.10
+  install:
+    - requirements: doc/source/requirements.txt
+# 可选：生成 PDF 格式文档
+formats:
+  - pdf
